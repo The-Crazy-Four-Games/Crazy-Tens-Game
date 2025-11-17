@@ -683,24 +683,29 @@ SR-10 (Input validation) & \mref{mAPI}, \mref{mRealtimeGateway}, \mref{mMoveCont
 \end{tabularx}
 \end{table}
 
+
+%%add
+
 \begin{table}[H]
 \centering
 \caption{Trace Between Anticipated Changes and Modules (TblACT)}
 \label{TblACT}
 \begin{tabularx}{\textwidth}{p{0.2\textwidth} X}
 \toprule
-\textbf{AC} & \textbf{Modules}\\
+\textbf{Anticipate Change} & \textbf{Modules} \\
 \midrule
-\acref{acRules} & \mref{mRules}, \mref{mGameEngine} \\
-\acref{acBases} & \mref{mBaseConversion}, \mref{mScoring}, \mref{mRules}, \mref{mScoreboardView} \\
-\acref{acScoring} & \mref{mScoring}, \mref{mScoreboardView} \\
-\acref{acUI} & \mref{mAppShell}, \mref{mGameBoardView}, \mref{mScoreboardView}, \mref{mLobbyView}, \mref{mProfileView} \\
-\acref{acSchema} & \mref{mRepository}, \mref{mAPI}, \mref{mProfileView} \\
-\acref{acRealtime} & \mref{mRealtimeGateway}, \mref{mRealtimeClient} \\
-\acref{acAuth} & \mref{mAuth}, \mref{mAuthClient}, \mref{mAPI} \\
+\acref{acRules} Rule Engine Changes & \mref{mRules}, \mref{mGameEngine} \\
+\acref{acBases} Numeric Base Support & \mref{mBaseConversion}, \mref{mScoring}, \mref{mRules}, \mref{mScoreboardView} \\
+\acref{acScoring} Scoring Formula / Presentation & \mref{mScoring}, \mref{mScoreboardView} \\
+\acref{acUI} UI / Interaction Patterns & \mref{mAppShell}, \mref{mGameBoardView}, \mref{mMoveController}, \mref{mScoreboardView} \\
+\acref{acSchema} DB Schema & \mref{mRepository}, \mref{mAPI}, \mref{mProfileView} \\
+\acref{acRealtime} Real-time Messaging & \mref{mRealtimeGateway}, \mref{mRealtimeClient}, \mref{mGameEngine} \\
+\acref{acAuth} Authentication Policies & \mref{mAuth}, \mref{mAuthClient}, \mref{mAPI} \\
 \bottomrule
 \end{tabularx}
 \end{table}
+
+\noindent\textit{Notes:} Each AC above corresponds to a ``secret'' that should be implemented and documented within the named module(s).  When an AC is realized, the owning module's MIS (or submodule docs) should be updated so that the secret is well described and the code-to-docs trace remains intact.
 
 
 \section{Use Hierarchy} \label{SecUse}
