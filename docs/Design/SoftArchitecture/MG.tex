@@ -816,9 +816,65 @@ SR-10 (Input validation) & \mref{mAPI}, \mref{mRealtimeGateway}, \mref{mMoveCont
 \end{figure}
 
 
-\section{Design of Communication Protocols}
+\section{Design of Communication Protocols} \label{SecCP}
 
-%%add
+This section captures the protocol-level design for server-client communication, with a focus on login/auth flows (REST) and gameplay flows (WebSocket). The approach favours a server-authoritative model: the server is the source of truth for game state.
+
+\subsection{Authentication and Profile (REST)}
+\paragraph{Endpoints (HTTP/JSON)}
+\begin{itemize}
+  \item \texttt{POST /api/auth/signup} \{ username, password \} $\rightarrow$ 201 / error
+  \item \texttt{POST /api/auth/login} \{ username, password \} $\rightarrow$ \{ token, user \}
+  \item \texttt{POST /api/auth/guest} $\rightarrow$ \{ token, guestId \}
+  \item \texttt{GET /api/profile/:userId} Authorization: Bearer token $\rightarrow$ profile
+  \item \texttt{PUT /api/profile/:userId} Authorization: Bearer token $\rightarrow$ updated profile
+\end{itemize}
+
+\noindent\textbf{Auth notes:} JWT-like Bearer tokens are issued on login and short-lived (configurable). Refresh tokens are out-of-scope for MVP but supported in design. Tokens are stored in secure HTTP-only cookies or in-memory (client decision in \mref{mAuthClient}).
+
+\subsection{Real-time Gameplay (WebSocket / Socket.IO style)}
+\paragraph{Connection lifecycle}
+\begin{enumerate}
+  \item Client connects to the Realtime Gateway with an Authorization header (Bearer token).
+  \item Server validates token, optionally checks profile/permissions, and assigns the socket to the user's session.
+  \item Client requests to join or create a lobby room via \texttt{joinRoom / createRoom}.
+\end{enumerate}
+
+\paragraph{Message schema (JSON) --- examples}
+\begin{itemize}
+  \item \textbf{Client $\rightarrow$ Server:} \texttt{\{ type: "playCard", payload: \{ sessionId, action: \{ kind:"play", card:\{suit,rank\}, meta:\{\}\} \} \}}
+  \item \textbf{Client $\rightarrow$ Server:} \texttt{\{ type: "drawCard", payload: \{ sessionId \} \}}
+  \item \textbf{Server $\rightarrow$ Client:} \texttt{\{ type: "stateUpdate", payload: \{ sessionId, state: \{ hands, discardTop, turn, scores\} \} \}}
+%  \item \textbf{Server $\rightarrow$ Client:} \texttt{\{ type: "actionResult", payload: \{ ok: true/false, reason?: "invalid_move" \} \}}
+%  \item \textbf{Server -> Client:} \texttt{\{ type: ``reconnectSnapshot'', payload: \{ sessionId, fullState \} \}} (used on reconnection)
+\end{itemize}
+
+\paragraph{Protocol properties and constraints}
+\begin{itemize}
+  \item \textbf{Authoritative server:} All move validation occurs on the server (\mref{mRules}/\mref{mGameEngine}). Clients may do local pre-checks for responsiveness, but final acceptance comes from the server.
+  \item \textbf{Idempotency:} Actions include client-generated request IDs so duplicate deliveries during reconnection are ignored.
+  \item \textbf{Delta updates:} For performance, \texttt{stateUpdate} messages typically contain deltas; full-state snapshots are reserved for joins/reconnects.
+  \item \textbf{Resync strategy:} On reconnect, the client requests a \texttt{reconnectSnapshot}. The server supplies a full state and the client applies it atomically to avoid inconsistent UI states.
+  \item \textbf{Security:} All WebSocket connections are over WSS (TLS). Authorization is checked per message where required.
+\end{itemize}
+
+\subsection{Sequence Example: Play Card flow}
+\begin{enumerate}
+  \item Client sends \texttt{playCard} with action payload.
+  \item Realtime Gateway authenticates and forwards the action to Game Engine worker.
+  \item Game Engine validates via Rules module:
+    \begin{itemize}
+      \item If accepted: update state, persist via Repository, emit \texttt{actionResult(ok:true)}, then emit \texttt{stateUpdate} to all room clients.
+%      \item If rejected: emit \texttt{actionResult(ok:false, reason:"invalid_move")} to the initiating client.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Failure modes and mitigation}
+\begin{itemize}
+  \item \textbf{Dropped messages / short disconnects:} idempotent request IDs plus reconnection snapshot mitigate lost messages.
+  \item \textbf{Lag / delayed updates:} server sends small heartbeats and uses sequence numbers so clients can detect missing updates.
+  \item \textbf{Untrusted clients:} server always re-checks any client-supplied action against the Rules module — never trust client state for authoritative decisions.
+\end{itemize}
 
 \section{Timeline}
 
