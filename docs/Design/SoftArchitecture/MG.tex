@@ -163,8 +163,59 @@ other shows the relation between anticipated changes and the modules. Section
 \ref{SecUse} describes the use relation between modules.
 
 
-%%add
-\section{Anticipated and Unlikely Changes} \label{SecChange}
+\section{Anticipated and Unlikely Changes (completed)} \label{SecChange}
+
+This section lists the project changes that we expect (``Likely Changes'') and those we consider unlikely within the capstone timeframe (``Unlikely Changes'').  Where applicable each anticipated change (AC) has been given an identifier to support traceability and to guide module secrets.
+
+\subsection{Likely Changes (each becomes an AC / module secret)}
+\begin{description}
+  \item[\refstepcounter{acnum}\label{acRules} \actheacnum\ --- Rule Engine Changes:] 
+    The validation and behavioural details of the game's rule engine (e.g., how special cards behave, new house rules or alternate base arithmetic rules).  
+    \\
+    \textbf{Rationale:} Rules are likely to be refined during playtesting and instructor feedback, so they should be isolated in the \mref{mRules} module.
+
+  \item[\refstepcounter{acnum}\label{acBases} \actheacnum\ --- Numeric Base Support (Dozenal and beyond):] 
+    Support for additional numeral systems (Octal, Hex, etc.), and how scores and hints convert and present values.  
+    \\
+    \textbf{Rationale:} We intend the product to be extensible to multiple bases; the conversion logic and scoring changes must be encapsulated in \mref{mBaseConversion}, \mref{mScoring}, and \mref{mScoreboardView}.
+
+  \item[\refstepcounter{acnum}\label{acScoring} \actheacnum\ --- Scoring Formula / Presentation:] 
+    Changes to how round or match scoring is calculated, aggregated or displayed (e.g., bonus rules, alternate tallying).  
+    \\
+    \textbf{Rationale:} Scoring may evolve after playtests; keep scoring logic isolated in \mref{mScoring}.
+
+  \item[\refstepcounter{acnum}\label{acUI} \actheacnum\ --- UI and Interaction Patterns:] 
+    Layout, hint presentation, animations, accessibility adaptations, and onboarding flow.  
+    \\
+    \textbf{Rationale:} UI polish and accessibility tweaks are frequent after usability sessions; the \mref{mAppShell}, \mref{mGameBoardView}, and \mref{mMoveController} should hide these secrets.
+
+  \item[\refstepcounter{acnum}\label{acSchema} \actheacnum\ --- Database Schema and Persistence Details:] 
+    Changes to the persistent schema (profiles, history, telemetry format) and indexes.  
+    \\
+    \textbf{Rationale:} Data collection needs evolve; the \mref{mRepository} module hides these details.
+
+  \item[\refstepcounter{acnum}\label{acRealtime} \actheacnum\ --- Real-time Messaging Strategy:] 
+    Room lifecycle, message batching, reconnection rules, and state-resync semantics.  
+    \\
+    \textbf{Rationale:} Real-time policies affect multiplayer stability; isolate them in \mref{mRealtimeGateway} and \mref{mRealtimeClient}.
+
+  \item[\refstepcounter{acnum}\label{acAuth} \actheacnum\ --- Authentication and Session Policies:] 
+    Token lifetime, guest-session semantics, password storage scheme, and auth flows.  
+    \\
+    \textbf{Rationale:} Security/configuration choices can change; these are hidden by \mref{mAuth} and the \mref{mAPI} interface.
+\end{description}
+
+\subsection{Unlikely Changes (explicitly documented)}
+These items are not expected to change during the capstone, so they are \emph{not} treated as module secrets and are documented rather than encapsulated in a separate module secret:
+
+\begin{itemize}
+  \item \textbf{Target Runtime Platforms:} Modern desktop browsers (Chrome/Firefox/Edge) remain the deployment target for the deliverable.
+  \item \textbf{Primary Tech Stack:} React frontend, Node.js backend, PostgreSQL for persistence.
+  \item \textbf{Core Gameplay Pattern:} The turn-based matching mechanics (match by suit / match by value / sum-to-12 in Dozenal) are a stable product decision.
+  \item \textbf{Non-functional goals baseline:} Performance targets (sub-300 ms updates), basic security expectations (TLS usage for network), and the expectation of GitHub-based CI.
+\end{itemize}
+
+\newpage
 
 \section{Module Hierarchy} \label{SecMH}
 
@@ -631,9 +682,6 @@ SR-10 (Input validation) & \mref{mAPI}, \mref{mRealtimeGateway}, \mref{mMoveCont
 \bottomrule
 \end{tabularx}
 \end{table}
-
-
-%%add
 
 \begin{table}[H]
 \centering
