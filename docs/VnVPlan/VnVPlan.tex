@@ -5,7 +5,7 @@
 \usepackage{hyperref}
 \usepackage{tabularx}
 \usepackage{float}
-
+\usepackage{ltablex}
 \hypersetup{
     colorlinks,
     citecolor=blue,
@@ -20,13 +20,9 @@
 
 \begin{document}
 
-\title{System Verification and Validation Plan for The Crazy Tens} 
+\title{System Verification and Validation Plan for \\\progname{}} 
 \author{
-    Team \#25, The Crazy Four \\[1ex]
-    Ruida Chen \\
-    Ammar Sharbat \\
-    Alvin Qian \\
-    Jiaming Li
+\authname
 }
 \date{\today}
 	
@@ -47,6 +43,7 @@ Oct 27 & Alvin & Fixed errors in FR tests\\
 Oct 27 & Ruida & Fixed errors in Plan \\
 Oct 27 & Alvin & VnV Plan Reflection \\
 Oct 27 & Ammar & Acronyms and General Information \\
+Nov 24 & Ruida & Fixed peer review issues and keep consistency\\
 \bottomrule
 \end{tabularx}
 
@@ -54,12 +51,9 @@ Oct 27 & Ammar & Acronyms and General Information \\
 \newpage
 
 \tableofcontents
-
+\newpage
 \pagenumbering{arabic}
 
-%=============================
-% Section 1: Symbols, Abbreviations, and Acronyms
-%=============================
 \section{Symbols, Abbreviations, and Acronyms}
 
 \renewcommand{\arraystretch}{1.2}
@@ -102,7 +96,7 @@ CI/CD & Combined Continuous Integration and Continuous Deployment workflow \\
 \end{tabularx}
 
 \noindent
-This table summarizes the major symbols, abbreviations, and acronyms used throughout this Verification and Validation Plan. The terms originate from both the SRS and internal documentation, reflecting the technical, architectural, and educational contexts of the Crazy 10s project.
+This table summarizes the major symbols, abbreviations, and acronyms used throughout this Verification and Validation Plan. The terms originate from both the SRS and internal documentation, reflecting the technical, architectural, and educational contexts of the Crazy Tens project.
 
 \newpage
 
@@ -110,10 +104,11 @@ This table summarizes the major symbols, abbreviations, and acronyms used throug
 % Section 2: General Information
 %=============================
 \section{General Information}
+This section provides an overview of the Crazy Tens project, outlining the software's purpose, key functionalities, and educational goals. It also defines the objectives of the verification and validation process, prioritizes quality attributes, assesses the challenge level and potential extras, and references supporting documentation to ensure alignment with project requirements.
 
 %-----------------------------
 \subsection{Summary}
-The software being verified and validated is called \textbf{Crazy 10s – A Counting Game}. It is an educational web-based card game designed to help users learn and practice arithmetic operations in different number bases, primarily Dozenal (Base 12) and Decimal (Base 10). The game provides interactive gameplay, Dozenal arithmetic challenges, score tracking, and base-conversion explanations to promote understanding of number systems.  
+The software being verified and validated is called \textbf{The Crazy Tens – A Counting Game}. It is an educational web-based card game designed to help users learn and practice arithmetic operations in different number bases, primarily Dozenal (Base 12) and Decimal (Base 10). The game provides interactive gameplay, Dozenal arithmetic challenges, score tracking, and base-conversion explanations to promote understanding of number systems.  
 
 Key functionalities (adapted from the SRS Section 9) include:
 \begin{itemize}
@@ -128,7 +123,7 @@ Educational support functions (FR 8–9) are considered out of scope for testing
 %-----------------------------
 \subsection{Objectives}
 
-The primary objective of this Verification and Validation Plan is to ensure that the Crazy 10s application satisfies all functional and non-functional requirements specified in the SRS and that the software is reliable, usable, and pedagogically effective.  
+The primary objective of this Verification and Validation Plan is to ensure that the Crazy Tens application satisfies all functional and non-functional requirements specified in the SRS and that the software is reliable, usable, and pedagogically effective.  
 Specifically, the V\&V process aims to:
 \begin{itemize}
     \item Verify the correctness, consistency, and completeness of the system design and implementation.  
@@ -137,6 +132,7 @@ Specifically, the V\&V process aims to:
 \end{itemize}
 
 \subsubsection{Qualities to Prioritize}
+The qualities listed below are prioritized in the verification and validation process to focus on attributes that enhance the educational impact, user engagement, and long-term viability of the Crazy Tens application, ensuring it meets high standards for reliability, performance, and maintainability.
 \begin{table}[H]
 \centering
 \caption{Qualities to Prioritize}
@@ -158,6 +154,7 @@ Testability & All modules link to test cases; full CI coverage $\geq$ 80\% & Ena
 \end{table}
 
 \subsubsection{Trivial Qualities}
+This subsection outlines qualities that are essential but straightforward to achieve given the project's scope, requiring minimal additional effort beyond standard implementation practices to satisfy basic correctness and security needs.
 \begin{table}[H]
 \centering
 \caption{Trivial Qualities}
@@ -172,6 +169,7 @@ Security & TLS 1.2 enforced; password hashing verified via test suite & Login se
 \end{table}
 
 \subsubsection{Qualities to Deprioritize}
+The following qualities are deprioritized as they fall outside the current project's primary objectives and constraints, allowing resources to be allocated toward core educational and functional goals instead.
 \begin{table}[H]
 \centering
 \caption{Qualities Not Prioritized}
@@ -331,10 +329,11 @@ SRS-C-09 & Feasibility & Can all requirements be realistically implemented withi
 
 \noindent \textbf{Process:} Design Walkthroughs \& Peer Review
 \begin{itemize}
-	\item The team will create design artifacts such as UML diagram, database Enitity-Relationship-Diagram (ERD), etc.
-	\item Schedule formal review meetings
+	\item The team will create design artifacts such as UML diagrams, database Entity-Relationship-Diagram (ERD), etc.
+	\item Schedule formal review meetings: These will occur weekly during the design phase or at key milestones, Each meeting will last 45–60 minutes and involve the full team, with at least one session including Dr. Rapoport
 	\item In these meetings, the team will "walk through" the design, explaining how it fullfills specific requirements from the SRS.
 	\item The team will use the checklist below to challenge the design and ensure full traceability from requirements to design.
+	\item Feedback capture and follow-up: All comments and action items will be recorded in GitHub Issues under the tag "Design-Review," with assigned owners and deadlines (e.g., resolution within 48 hours for critical issues). The design lead will ensure incorporation into updated artifacts before the next meeting or milestone.
 	\item All identified defects will be logged as GitHub Issues.
 \end{itemize}
 
@@ -368,7 +367,7 @@ DS-C-08 & Data & Does the database schema (ERD) correctly model the Business Dat
 	\item After the team review, the plan shall be informally presented to the course supervisor to get a "feasibility check" before implementation begins, mitigating project risk.
 \end{itemize}
 
-\noindent \textbf:{Checklist}
+\noindent \textbf{Checklist}
 \begin{table}[H]
 \centering
 \caption{V\&V Plan Verification Checklist}
@@ -524,7 +523,7 @@ This area verifies new game initialization, turn sequencing, rule validation for
 \textbf{How test will be performed:} Set top to value 5 then attempt to play value 7. Use \texttt{canPlay()} to assert true and log PASS.
 \end{enumerate}
 
-\paragraph{Special card: wild eight suit selection (ST-GM-04)}
+\paragraph{Special card: wild ten suit selection (ST-GM-04)}
 \begin{enumerate}
 \item{ST-GM-04\\}
 \textbf{Control:} Automatic
@@ -825,6 +824,7 @@ This area verifies secure storage of usernames, game history, and Dozenal scores
 
 
 \subsection{Traceability Between Test Cases and Requirements}
+This traceability matrix links each functional and non-functional requirement from the Software Requirements Specification (SRS) to the relevant system test cases, demonstrating comprehensive coverage and facilitating verification that all requirements are adequately tested.
 
 \begin{table}[H]
     \centering
@@ -994,12 +994,9 @@ Their values are defined in this section for easy maintenance.
 
 \subsection{Usability Survey Questions?}
 
-\wss{This is a section that would be appropriate for some projects.}
-
 \newpage{}
 \section*{Appendix --- Reflection}
 
-\wss{This section is not required for CAS 741}
 
 The information in this section will be used to evaluate the team members on the
 graduate attribute of Lifelong Learning.
