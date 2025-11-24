@@ -5,7 +5,7 @@
 \usepackage{hyperref}
 \usepackage{tabularx}
 \usepackage{float}
-
+\usepackage{ltablex}
 \hypersetup{
     colorlinks,
     citecolor=blue,
@@ -20,13 +20,9 @@
 
 \begin{document}
 
-\title{System Verification and Validation Plan for The Crazy Tens} 
+\title{System Verification and Validation Plan for \\\progname{}} 
 \author{
-    Team \#25, The Crazy Four \\[1ex]
-    Ruida Chen \\
-    Ammar Sharbat \\
-    Alvin Qian \\
-    Jiaming Li
+\authname
 }
 \date{\today}
 	
@@ -47,6 +43,7 @@ Oct 27 & Alvin & Fixed errors in FR tests\\
 Oct 27 & Ruida & Fixed errors in Plan \\
 Oct 27 & Alvin & VnV Plan Reflection \\
 Oct 27 & Ammar & Acronyms and General Information \\
+Nov 24 & Ruida & Fixed peer review issues and keep consistency\\
 \bottomrule
 \end{tabularx}
 
@@ -54,12 +51,9 @@ Oct 27 & Ammar & Acronyms and General Information \\
 \newpage
 
 \tableofcontents
-
+\newpage
 \pagenumbering{arabic}
 
-%=============================
-% Section 1: Symbols, Abbreviations, and Acronyms
-%=============================
 \section{Symbols, Abbreviations, and Acronyms}
 
 \renewcommand{\arraystretch}{1.2}
@@ -91,10 +85,10 @@ MVP & Minimum Viable Product \\
 IDE & Integrated Development Environment \\
 GUI & Graphical User Interface \\
 AI & Artificial Intelligence (for potential educational hints) \\
-MG & Module Guide \\
-MIS & Module Interface Specification \\
-HA & Hazard Analysis \\
-SR & Safety Requirement (from Hazard Analysis) \\
+MG & \href{../Design/SoftArchitecture/MG.pdf}{Module Guide} \\
+MIS &  \href{../Design/SoftDetailedDes/MIS.pdf}{Module Interface Specification} \\
+HA & \href{../HazardAnalysis/HazardAnalysis.pdf}{HazardAnalysis} \\
+SR & Safety Requirement (from \href{../HazardAnalysis/HazardAnalysis.pdf}{HazardAnalysis}) \\
 QA & Quality Assurance \\
 LTI & Learning Tool Interoperability (future extension) \\
 CI/CD & Combined Continuous Integration and Continuous Deployment workflow \\
@@ -102,7 +96,7 @@ CI/CD & Combined Continuous Integration and Continuous Deployment workflow \\
 \end{tabularx}
 
 \noindent
-This table summarizes the major symbols, abbreviations, and acronyms used throughout this Verification and Validation Plan. The terms originate from both the SRS and internal documentation, reflecting the technical, architectural, and educational contexts of the Crazy 10s project.
+This table summarizes the major symbols, abbreviations, and acronyms used throughout this Verification and Validation Plan. The terms originate from both the \href{../SRS/SRS.pdf}{SRS} and internal documentation, reflecting the technical, architectural, and educational contexts of the Crazy Tens project.
 
 \newpage
 
@@ -110,12 +104,13 @@ This table summarizes the major symbols, abbreviations, and acronyms used throug
 % Section 2: General Information
 %=============================
 \section{General Information}
+This section provides an overview of the Crazy Tens project, outlining the software's purpose, key functionalities, and educational goals. It also defines the objectives of the verification and validation process, prioritizes quality attributes, assesses the challenge level and potential extras, and references supporting documentation to ensure alignment with project requirements.
 
 %-----------------------------
 \subsection{Summary}
-The software being verified and validated is called \textbf{Crazy 10s – A Counting Game}. It is an educational web-based card game designed to help users learn and practice arithmetic operations in different number bases, primarily Dozenal (Base 12) and Decimal (Base 10). The game provides interactive gameplay, Dozenal arithmetic challenges, score tracking, and base-conversion explanations to promote understanding of number systems.  
+The software being verified and validated is called \textbf{The Crazy Tens – A Counting Game}. It is an educational web-based card game designed to help users learn and practice arithmetic operations in different number bases, primarily Dozenal (Base 12) and Decimal (Base 10). The game provides interactive gameplay, Dozenal arithmetic challenges, score tracking, and base-conversion explanations to promote understanding of number systems.  
 
-Key functionalities (adapted from the SRS Section 9) include:
+Key functionalities (adapted from the \href{../SRS/SRS.pdf}{SRS} Section 9) include:
 \begin{itemize}
     \item Initiating and joining game sessions with other users in real time.
     \item Enforcing turn-based gameplay and validating moves under Dozenal rules.
@@ -128,7 +123,7 @@ Educational support functions (FR 8–9) are considered out of scope for testing
 %-----------------------------
 \subsection{Objectives}
 
-The primary objective of this Verification and Validation Plan is to ensure that the Crazy 10s application satisfies all functional and non-functional requirements specified in the SRS and that the software is reliable, usable, and pedagogically effective.  
+The primary objective of this Verification and Validation Plan is to ensure that the Crazy Tens application satisfies all functional and non-functional requirements specified in the \href{../SRS/SRS.pdf}{SRS} and that the software is reliable, usable, and pedagogically effective.  
 Specifically, the V\&V process aims to:
 \begin{itemize}
     \item Verify the correctness, consistency, and completeness of the system design and implementation.  
@@ -137,6 +132,7 @@ Specifically, the V\&V process aims to:
 \end{itemize}
 
 \subsubsection{Qualities to Prioritize}
+The qualities listed below are prioritized in the verification and validation process to focus on attributes that enhance the educational impact, user engagement, and long-term viability of the Crazy Tens application, ensuring it meets high standards for reliability, performance, and maintainability.
 \begin{table}[H]
 \centering
 \caption{Qualities to Prioritize}
@@ -158,6 +154,7 @@ Testability & All modules link to test cases; full CI coverage $\geq$ 80\% & Ena
 \end{table}
 
 \subsubsection{Trivial Qualities}
+This subsection outlines qualities that are essential but straightforward to achieve given the project's scope, requiring minimal additional effort beyond standard implementation practices to satisfy basic correctness and security needs.
 \begin{table}[H]
 \centering
 \caption{Trivial Qualities}
@@ -172,6 +169,7 @@ Security & TLS 1.2 enforced; password hashing verified via test suite & Login se
 \end{table}
 
 \subsubsection{Qualities to Deprioritize}
+The following qualities are deprioritized as they fall outside the current project's primary objectives and constraints, allowing resources to be allocated toward core educational and functional goals instead.
 \begin{table}[H]
 \centering
 \caption{Qualities Not Prioritized}
@@ -246,7 +244,7 @@ This section details the comprehensive, multi-phase plan for the verification an
 \toprule
 \textbf{Name} & \textbf{Responsibilities} \\
 \midrule
-Ruida Chen & Owns SRS checklist and requirement traceability; leads ambiguity inspections; opens and triages SRS issues on GitHub. \\
+Ruida Chen & Owns SRS checklist and requirement traceability; leads ambiguity inspections; opens and triages \href{../SRS/SRS.pdf}{SRS} issues on GitHub. \\
 Ammar Sharbat & Conducts MG/MIS walkthroughs; checks FR/NFR coverage; verifies pre/post-conditions in design. \\
 Alvin Qian & Develops unit and integration tests; maintains CI coverage metrics; triages static analysis warnings. \\
 Jiaming Li & Organizes stakeholder playtests and usability sessions; aligns validation with personas and client expectations. \\
@@ -256,10 +254,10 @@ Jiaming Li & Organizes stakeholder playtests and usability sessions; aligns vali
 
 \subsection{SRS Verification}
 \textbf{Objective:}  
-To ensure the Software Requirements Specification (SRS) is complete, consistent, verifiable, and aligns with the project goals and constraints defined by the client and supervisor.
+To ensure the Software Requirements Specification (\href{../SRS/SRS.pdf}{SRS}) is complete, consistent, verifiable, and aligns with the project goals and constraints defined by the client and supervisor.
 
 \noindent \textbf{Scope:}  
-This verification applies to all functional and non-functional requirements described in the SRS. It covers requirement clarity, consistency, completeness, and testability.  
+This verification applies to all functional and non-functional requirements described in the \href{../SRS/SRS.pdf}{SRS}. It covers requirement clarity, consistency, completeness, and testability.  
 
 \noindent \textbf{Supervisor Involvement:}  
 The SRS verification process will be conducted under the supervision of \textbf{Dr.\ Paul Rapoport}.  
@@ -283,7 +281,7 @@ The review will take the form of a scheduled meeting lasting approximately 30--4
     \item \textbf{Meeting preparation:}  
     Before the meeting, the team will prepare and send Dr.\ Rapoport a concise review package containing:
     \begin{enumerate}
-        \item The finalized SRS document (PDF);  
+        \item The finalized \href{../SRS/SRS.pdf}{SRS} document (PDF);  
         \item A one-page summary of critical or ambiguous requirements;  
         \item The SRS verification checklist used in internal inspection;  
         \item The traceability matrix linking requirements to design/test artifacts.
@@ -299,7 +297,7 @@ The review will take the form of a scheduled meeting lasting approximately 30--4
 
     \item \textbf{Feedback capture and follow-up:}  
     Comments and action items from the meeting will be recorded in the GitHub Issue Tracker under the tag \texttt{SRS-Review}, each with an assigned owner and deadline.  
-    The SRS Lead (Ruida Chen) will ensure all feedback is incorporated into the updated SRS before sign-off.
+    The SRS Lead will ensure all feedback is incorporated into the updated \href{../SRS/SRS.pdf}{SRS} before sign-off.
 
     \item \textbf{Supervisor:}  
     After corrections, Dr.\ Rapoport will be provided with a change summary.
@@ -327,14 +325,15 @@ SRS-C-09 & Feasibility & Can all requirements be realistically implemented withi
 
 
 \subsection{Design Verification}
-\noindent \textbf{Objective}: To verify that the system design is a correct, complete, and feasible implementation of the verified SRS
+\noindent \textbf{Objective}: To verify that the system design is a correct, complete, and feasible implementation of the verified \href{../SRS/SRS.pdf}{SRS}
 
 \noindent \textbf{Process:} Design Walkthroughs \& Peer Review
 \begin{itemize}
-	\item The team will create design artifacts such as UML diagram, database Enitity-Relationship-Diagram (ERD), etc.
-	\item Schedule formal review meetings
-	\item In these meetings, the team will "walk through" the design, explaining how it fullfills specific requirements from the SRS.
+	\item The team will create design artifacts such as UML diagrams, database Entity-Relationship-Diagram (ERD), etc.
+	\item Schedule formal review meetings: These will occur weekly during the design phase or at key milestones, Each meeting will last 45–60 minutes and involve the full team, with at least one session including Dr. Rapoport
+	\item In these meetings, the team will "walk through" the design, explaining how it fullfills specific requirements from the \href{../SRS/SRS.pdf}{SRS}.
 	\item The team will use the checklist below to challenge the design and ensure full traceability from requirements to design.
+	\item Feedback capture and follow-up: All comments and action items will be recorded in GitHub Issues under the tag "Design-Review," with assigned owners and deadlines (e.g., resolution within 48 hours for critical issues). The design lead will ensure incorporation into updated artifacts before the next meeting or milestone.
 	\item All identified defects will be logged as GitHub Issues.
 \end{itemize}
 
@@ -368,7 +367,7 @@ DS-C-08 & Data & Does the database schema (ERD) correctly model the Business Dat
 	\item After the team review, the plan shall be informally presented to the course supervisor to get a "feasibility check" before implementation begins, mitigating project risk.
 \end{itemize}
 
-\noindent \textbf:{Checklist}
+\noindent \textbf{Checklist}
 \begin{table}[H]
 \centering
 \caption{V\&V Plan Verification Checklist}
@@ -455,7 +454,7 @@ Validation focuses on ensuring that the software behaves as intended by users an
 
 \noindent\textbf{Success Criteria:}
 \begin{itemize}
-    \item All core gameplay and scoring functions work as described in the SRS.  
+    \item All core gameplay and scoring functions work as described in the \href{../SRS/SRS.pdf}{SRS}.  
     \item Supervisor and users confirm that the software meets educational and functional goals.  
     \item No critical usability or stability issues remain unresolved.
 \end{itemize}
@@ -466,11 +465,11 @@ Validation summary report including stakeholder feedback, test logs, and any fin
 
 \section{System Tests}
 
-This section defines end to end system tests that validate the software against the SRS Functional Requirements (FR-1..FR-17) for the MVP implementation state. Tests are grouped by related functionality to improve traceability and reuse of fixtures. Unless stated otherwise, tests assume a deterministic deck seed, two authenticated test users, and a clean database. All expected results are observable via the UI and server state exposed to the test harness.
+This section defines end to end system tests that validate the software against the \href{../SRS/SRS.pdf}{SRS} Functional Requirements (FR-1..FR-17) for the MVP implementation state. Tests are grouped by related functionality to improve traceability and reuse of fixtures. Unless stated otherwise, tests assume a deterministic deck seed, two authenticated test users, and a clean database. All expected results are observable via the UI and server state exposed to the test harness.
 
 \subsection{Tests for Functional Requirements}
 
-The subsections below cover: (1) game flow, rule validation, special cards, and end conditions (SRS Game Manager: FR-1..FR-5), (2) scoring and valid move highlighting (SRS Score Manager and Highlighting: FR-6..FR-9), (3) account access flows (Login Manager: FR-10..FR-13), and (4) persistence operations (Data Manager: FR-14..FR-17). Where tests rely on input constraints, they use the card value and move legality definitions in the SRS.
+The subsections below cover: (1) game flow, rule validation, special cards, and end conditions (\href{../SRS/SRS.pdf}{SRS} Game Manager: FR-1..FR-5), (2) scoring and valid move highlighting (\href{../SRS/SRS.pdf}{SRS} Score Manager and Highlighting: FR-6..FR-9), (3) account access flows (Login Manager: FR-10..FR-13), and (4) persistence operations (Data Manager: FR-14..FR-17). Where tests rely on input constraints, they use the card value and move legality definitions in the \href{../SRS/SRS.pdf}{SRS}.
 
 \subsubsection{Game Manager: Start, Turn, Rules, Specials, End (FR-1..FR-5)}
 
@@ -487,7 +486,7 @@ This area verifies new game initialization, turn sequencing, rule validation for
 
 \textbf{Output:} A new session is created with a shuffled deck using seed S, a discard starter card is placed, each player receives the configured hand size H, and the UI shows turn = User A.
 
-\textbf{Test Case Derivation:} From FR-1 and SRS deck initialization semantics. With a fixed seed S, the initial state is uniquely determined.
+\textbf{Test Case Derivation:} From FR-1 and \href{../SRS/SRS.pdf}{SRS} deck initialization semantics. With a fixed seed S, the initial state is uniquely determined.
 
 \textbf{How test will be performed:} Run a Node console harness that calls \texttt{initGame('S')}, then logs and checks via simple equality that \texttt{hands} have size H, \texttt{discard.length == 1}, and \texttt{turn == UserA}. No browser, no sockets.
 \end{enumerate}
@@ -524,7 +523,7 @@ This area verifies new game initialization, turn sequencing, rule validation for
 \textbf{How test will be performed:} Set top to value 5 then attempt to play value 7. Use \texttt{canPlay()} to assert true and log PASS.
 \end{enumerate}
 
-\paragraph{Special card: wild eight suit selection (ST-GM-04)}
+\paragraph{Special card: wild ten suit selection (ST-GM-04)}
 \begin{enumerate}
 \item{ST-GM-04\\}
 \textbf{Control:} Automatic
@@ -582,7 +581,7 @@ This area validates round scoring in decimal and Dozenal, correct conversion and
 \item{ST-SC-01\\}
 \textbf{Control:} Automatic
 
-\textbf{Initial State:} Game just ended. Opponent remaining cards have numeric values 2, 4, 6 (per SRS value function).
+\textbf{Initial State:} Game just ended. Opponent remaining cards have numeric values 2, 4, 6 (per \href{../SRS/SRS.pdf}{SRS} value function).
 
 \textbf{Input:} Trigger score calculation screen.
 
@@ -825,6 +824,7 @@ This area verifies secure storage of usernames, game history, and Dozenal scores
 
 
 \subsection{Traceability Between Test Cases and Requirements}
+This traceability matrix links each functional and non-functional requirement from the Software Requirements Specification (\href{../SRS/SRS.pdf}{SRS}) to the relevant system test cases, demonstrating comprehensive coverage and facilitating verification that all requirements are adequately tested.
 
 \begin{table}[H]
     \centering
@@ -832,7 +832,7 @@ This area verifies secure storage of usernames, game history, and Dozenal scores
     \label{TblTraceability}
     \begin{tabular}{|p{0.2\textwidth}|p{0.45\textwidth}|p{0.35\textwidth}|}
         \hline
-        \textbf{Requirement ID} & \textbf{Description (from SRS)} & \textbf{Associated Test Case(s)} \\ \hline
+        \textbf{Requirement ID} & \textbf{Description (from \href{../SRS/SRS.pdf}{SRS})} & \textbf{Associated Test Case(s)} \\ \hline
 
         FR-1 & Start a new game session with two players. & ST-GM-01 \\ \hline
         FR-2 & Manage player turns and enforce alternating actions. & ST-GM-02, ST-GM-04 \\ \hline
@@ -994,12 +994,9 @@ Their values are defined in this section for easy maintenance.
 
 \subsection{Usability Survey Questions?}
 
-\wss{This is a section that would be appropriate for some projects.}
-
 \newpage{}
 \section*{Appendix --- Reflection}
 
-\wss{This section is not required for CAS 741}
 
 The information in this section will be used to evaluate the team members on the
 graduate attribute of Lifelong Learning.
@@ -1009,12 +1006,12 @@ graduate attribute of Lifelong Learning.
 \begin{enumerate}
   \item What went well while writing this deliverable? 
 
-During the writing of this deliverable, our team improved our understanding of how verification and validation activities fit into a software lifecycle.  We learned to trace requirements back to specific tests, and maintain consistency across project documents(SRS and Supervisor feedbacks). Overall, this deliverable helped us formalize our testing strategy and clarify the expectations for the Crazy Tens project.
+During the writing of this deliverable, our team improved our understanding of how verification and validation activities fit into a software lifecycle.  We learned to trace requirements back to specific tests, and maintain consistency across project documents(\href{../SRS/SRS.pdf}{SRS} and Supervisor feedbacks). Overall, this deliverable helped us formalize our testing strategy and clarify the expectations for the Crazy Tens project.
   \item What pain points did you experience during this deliverable, and how
     did you resolve them?
 
 
-Scope drift around base rules and wild card, cross-doc sync issues between SRS and VnV, and clarifying auth/data flows; we resolved these by parameterizing rules via config and FR ids, adding a small CSV trace matrix and change logs, and specifying salted hashing, session behavior, and delete flows mirrored by tests.
+Scope drift around base rules and wild card, cross-doc sync issues between \href{../SRS/SRS.pdf}{SRS} and VnV, and clarifying auth/data flows; we resolved these by parameterizing rules via config and FR ids, adding a small CSV trace matrix and change logs, and specifying salted hashing, session behavior, and delete flows mirrored by tests.
   \item What knowledge and skills will the team collectively need to acquire to
   successfully complete the verification and validation of your project?
   Examples of possible knowledge and skills include dynamic testing knowledge,
