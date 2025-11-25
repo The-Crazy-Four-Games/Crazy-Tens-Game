@@ -1,6 +1,6 @@
 const RANKS = [
     "2", "3", "4", "5", "6", "7", "8", "9", "10",
-    "J", "Q", "K", "A"
+    "J", "Q", "K", "A","X","Y","C"
 ];
 
 const SUITS = ["H", "D", "C", "S"]; // Hearts, Diamonds, Clubs, Spades
@@ -8,7 +8,10 @@ const SUITS = ["H", "D", "C", "S"]; // Hearts, Diamonds, Clubs, Spades
 const getCardValue = (rank) => {
     const value = parseInt(rank, 10);
     if (rank === "A") return 1;
-    if (value >= 2 && value <= 10) return value;
+    if (rank === "X") return 9; // dozenal card X
+    if (rank === "Y") return 11; // dozenal card Y
+    if (rank === "10") return 12; // 10 is treated as 12 in dozenal
+    if (value >= 2 && value < 10) return value;
     return null; // Face cards have no numeric value
 };
 

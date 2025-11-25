@@ -19,8 +19,10 @@ class GameRoom {
         this.restartVotes = new Set();
     }
     _getScoringValue(rank) {
-        if (['J', 'Q', 'K', '10'].includes(rank)) return 10;
+        if (['J', 'Q', 'K','C','X'].includes(rank)) return 10;
         if (rank === 'A') return 1;
+        if (rank === 'Y') return 11;
+        if (rank === '10') return 12;
 
         const val = parseInt(rank, 10);
         if (val >= 2 && val <= 9) return val;

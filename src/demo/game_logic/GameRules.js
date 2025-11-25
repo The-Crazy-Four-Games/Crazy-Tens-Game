@@ -29,7 +29,7 @@ function isValidPlay(playedCard, topCard, activeWildChoice) {
   }
 
   // Match value sum to 10
-  if (playedCard.value && topCard.value && (playedCard.value + topCard.value === 10)) {
+  if (playedCard.value && topCard.value && (playedCard.value + topCard.value === 12)) {
     return true;
   }
 
