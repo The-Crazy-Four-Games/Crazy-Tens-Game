@@ -18,6 +18,9 @@ let currentTurn = "";
 let currentTopCard = null;
 let myScore = 0;
 let opponentScore = 0;
+let turnDeadline = null;
+let turnDurationMs = 0;
+let countdownInterval = null;
 // show game prompt
 function showGamePrompt() {
     console.log("--------------------");
@@ -25,6 +28,12 @@ function showGamePrompt() {
     console.log(`Room: ${currentRoomId} | Your ID: ${myId}`);
     console.log(`Top Card on Discard Pile: ${currentTopCard ? currentTopCard.id : "N/A"}`);
     console.log(`\nYour Hand Cards: [ ${myHand.map(c => c.id).join(", ")} ]\n`);
+
+    if (currentTurn === myId && turnDeadline) {
+        const msRemaining = Math.max(0, turnDeadline - Date.now());
+        const secondsLeft = Math.ceil(msRemaining / 1000);
+        console.log(`Quick bonus timer: ${secondsLeft}s left (play before it hits 0 for +1).`);
+    }
 
     if (currentTurn === myId) {
         console.log(">>> Now it's your turn <<<");
@@ -109,6 +118,10 @@ socket.on("gameStateUpdate", (state) => {
     currentTopCard = state.discardTop;
     myScore = state.myScore;
     opponentScore = state.opponentScore;
+    turnDeadline = state.turnDeadline;
+    turnDurationMs = state.turnDurationMs;
+
+    syncCountdown();
 
     // print public info
 
@@ -136,6 +149,10 @@ socket.on("requestWildChoice", () => {
 socket.on("drewCards", (message) => {
     console.log(`[Server] ${message}`);
 
+});
+
+socket.on("info", (message) => {
+    console.log(`[Info] ${message}`);
 });
 
 // monitor game over event
@@ -183,6 +200,7 @@ socket.on("error", (message) => {
 });
 
 socket.on("disconnect", () => {
+    stopCountdown();
     console.log("[Client] disconnected from server.");
     rl.close();
 });
@@ -243,4 +261,62 @@ function handleGameInput(input) {
 
 
 
+}
+
+function syncCountdown() {
+    if (currentTurn === myId && turnDeadline) {
+        startCountdown();
+    } else {
+        stopCountdown();
+    }
+}
+
+function startCountdown() {
+    stopCountdown();
+    const tick = () => {
+        if (!turnDeadline) return stopCountdown();
+        const msRemaining = turnDeadline - Date.now();
+        if (msRemaining <= 0) {
+            clearTimerLine();
+            console.log("[Timer] Quick bonus window closed.");
+            return stopCountdown();
+        }
+        const secondsLeft = Math.ceil(msRemaining / 1000);
+        renderTimer(secondsLeft);
+    };
+    tick();
+    countdownInterval = setInterval(tick, 1000);
+}
+
+function stopCountdown() {
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
+    clearTimerLine();
+}
+
+function renderTimer(secondsLeft) {
+    const msg = `[Timer] ${secondsLeft}s left for +1 bonus.`;
+    readline.clearLine(process.stdout, 0);
+    readline.cursorTo(process.stdout, 0);
+    process.stdout.write(msg);
+    process.stdout.write("\n");
+    refreshInputLine();
+}
+
+function clearTimerLine() {
+    readline.clearLine(process.stdout, 0);
+    readline.cursorTo(process.stdout, 0);
+    refreshInputLine();
+}
+
+function refreshInputLine() {
+    if (!rl || typeof rl.line !== "string") return;
+    const line = rl.line;
+    const cursor = rl.cursor;
+    readline.clearLine(process.stdout, 0);
+    readline.cursorTo(process.stdout, 0);
+    process.stdout.write(rl._prompt + line);
+    readline.cursorTo(process.stdout, rl._prompt.length + cursor);
 }

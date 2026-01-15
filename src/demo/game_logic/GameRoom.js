@@ -11,6 +11,11 @@ class GameRoom {
         this.discardPile = [];
         this.scores = [0, 0]
 
+        this.turnDurationMs = 10000; // quick-turn bonus window
+        this.quickTurnBonus = 1;
+        this.turnTimer = null;
+        this.turnDeadline = null;
+
         this.state = {
             turn: null, // player index
             activeWildChoice: null, // eg { type: 'suit', value: 'H' }
@@ -54,6 +59,7 @@ class GameRoom {
     }
 
     removePlayer(socketId) {
+        this.clearTurnTimer();
         this.state.status = "finished";
         this.io.to(this.roomId).emit("gameOver", "opponent disconnected.");
     }
@@ -75,6 +81,8 @@ class GameRoom {
         // flip the first card to start the discard pile
         this.discardPile.push(this.deck.draw());
         this.state.turn = 0; // room host starts first
+
+        this.scheduleTurnTimer();
 
         this.broadcastGameState();
         console.log(`[Game ${this.roomId}] started`);
@@ -115,6 +123,8 @@ class GameRoom {
         this.state.activeWildChoice = null;
         player.hand.splice(cardIndex, 1);
         this.discardPile.push(playedCard);
+
+        this.maybeAwardQuickBonus(playerIndex);
 
         // 5. each round win check
         if (player.hand.length === 0) {
@@ -160,6 +170,7 @@ class GameRoom {
 
         // check for Wildcard play
         if (playedCard.rank === "10") {
+            this.clearTurnTimer();
             player.socket.emit("requestWildChoice");
         } else {
             this.nextTurn();
@@ -237,7 +248,9 @@ class GameRoom {
         this.broadcastGameState();
     }
     nextTurn() {
+        this.clearTurnTimer();
         this.state.turn = (this.state.turn + 1) % 2;
+        this.scheduleTurnTimer();
     }
 
     // --- broadcast ---
@@ -254,6 +267,8 @@ class GameRoom {
                 turn: this.players[this.state.turn].id,
                 activeWildChoice: this.state.activeWildChoice,
                 playerHandCounts: this.players.map(p => ({ id: p.id, count: p.hand.length })),
+                turnDeadline: this.turnDeadline,
+                turnDurationMs: this.turnDurationMs,
 
                 // private info
                 myHand: player.hand,
@@ -302,6 +317,8 @@ class GameRoom {
     resetGame() {
         console.log(`[Game ${this.roomId}] both players agreed to restart. Resetting game...`);
 
+        this.clearTurnTimer();
+
 
         // reset game state
         this.deck = new Deck(); // new shuffled deck
@@ -313,6 +330,55 @@ class GameRoom {
 
 
         this.startGame();
+    }
+
+    scheduleTurnTimer() {
+        if (this.state.status !== "playing") return;
+
+        this.clearTurnTimer();
+        this.turnDeadline = Date.now() + this.turnDurationMs;
+        this.turnTimer = setTimeout(() => this.handleTurnTimerExpiry(), this.turnDurationMs);
+    }
+
+    clearTurnTimer() {
+        if (this.turnTimer) {
+            clearTimeout(this.turnTimer);
+            this.turnTimer = null;
+        }
+        this.turnDeadline = null;
+    }
+
+    handleTurnTimerExpiry() {
+        if (this.state.status !== "playing") return;
+
+        this.turnTimer = null;
+        this.turnDeadline = null;
+
+        const currentPlayer = this.players[this.state.turn];
+        if (currentPlayer) {
+            currentPlayer.socket.emit("info", "Turn timer expired. No quick bonus this turn.");
+        }
+
+        this.broadcastGameState();
+    }
+
+    maybeAwardQuickBonus(playerIndex) {
+        const player = this.players[playerIndex];
+        if (!player) return;
+
+        const inWindow = this.turnDeadline && Date.now() <= this.turnDeadline;
+        if (inWindow) {
+            this.scores[playerIndex] += this.quickTurnBonus;
+            player.socket.emit("info", `Quick turn! +${this.quickTurnBonus} point.`);
+
+            const opponentIndex = (playerIndex + 1) % 2;
+            const opponent = this.players[opponentIndex];
+            if (opponent) {
+                opponent.socket.emit("info", `Opponent earned +${this.quickTurnBonus} quick-turn bonus.`);
+            }
+        }
+
+        this.clearTurnTimer();
     }
 }
 
