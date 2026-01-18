@@ -58,7 +58,7 @@ Nov 12th & Rev-1 & Module M12-M22\\
 Nov 13th & Rev-1 & Fix consistency\\
 Nov 13th & Rev-1 & Fix correlation\\
 Nov 13th & Rev-1 & Fix consistency\\
-
+Jan 14th & Rev0 & Remove module 20,21,22\\ 
 \bottomrule
 \end{tabularx}
 
@@ -131,9 +131,7 @@ The following table is taken directly from the Module Guide document for this pr
 \textbf{Level 1} & \textbf{Level 2} & \textbf{Level 3 (Leaf Modules)}\\
 \midrule
 
-\multirow{3}{0.3\textwidth}{Hardware-Hiding Module} & ~ & \hyperref[sec:os-module]{M20 (Server OS)} \\
-& ~ & \hyperref[sec:browser-runtime-module]{M21 (Client Runtime)} \\
-& ~ & \hyperref[sec:database-module]{M22 (PostgreSQL)} \\
+\multirow{3}{0.3\textwidth}{Hardware-Hiding Module} & ~ & (None) \\
 \midrule
 
 \multirow{4}{0.3\textwidth}{Behaviour-Hiding Module} & (Core Domain Logic) & \hyperref[sec:game-engine-module]{M15} \\
@@ -170,33 +168,37 @@ The following table is taken directly from the Module Guide document for this pr
 \section{MIS of API Module (M1)}\label{sec:api-module}
 
 \subsection{Module}
-API (Service Layer)
+API
 
 \subsection{Uses}
 \begin{itemize}
-    \item \hyperref[sec:matchmaking-module]{M3 Matchmaking Module}
     \item \hyperref[sec:authentication-module]{M4 Authentication Module}
     \item \hyperref[sec:repository-module]{M5 Repository Module}
+    \item \hyperref[sec:audit-module]{M6 Audit Module}
 \end{itemize}
 
 \subsection{Syntax}
 
 \subsubsection{Exported Constants}
-None.
+\begin{itemize}
+    \item \textbf{APIVersion}: string := ``v1''
+\end{itemize}
 
 \subsubsection{Exported Access Programs}
 
 \begin{center}
-\begin{tabular}{p{3.5cm} p{4.5cm} p{3.5cm} p{4cm}}
+\begin{tabular}{p{4.5cm} p{4.5cm} p{3.5cm} p{3.5cm}}
 \toprule
 \textbf{Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
 \midrule
-signup & creds: UserCredentials & user: User & AuthError, ValidationError \\
-login & creds: UserCredentials & token: AuthToken & InvalidCredentials, ValidationError \\
-createGame & token: AuthToken, options: GameOptions & session: GameSession & AuthError, LobbyError \\
-getProfile & token: AuthToken & profile: UserProfile & AuthError, NotFound \\
-updateProfile & token: AuthToken, profile: UserProfile & profile: UserProfile & AuthError, ValidationError, NotFound \\
-deleteProfile & token: AuthToken & void & AuthError, NotFound \\
+postRegister & req: RegisterRequest & HttpResponse & BadRequest, UsernameTaken, WeakPassword \\
+postLogin & req: LoginRequest & HttpResponse & BadRequest, InvalidCredentials, AccountNotFound \\
+postGuestSession & req: GuestSessionRequest & HttpResponse & BadRequest \\
+postLogout & req: LogoutRequest & HttpResponse & BadRequest, InvalidToken \\
+getProfile & req: AuthenticatedRequest & HttpResponse & Unauthorized, RecordNotFound \\
+putProfile & req: UpdateProfileRequest & HttpResponse & BadRequest, Unauthorized, RecordNotFound \\
+postNewGame & req: NewGameRequest & HttpResponse & BadRequest, Unauthorized \\
+getHealth & req: HttpRequest & HttpResponse & None \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -204,62 +206,79 @@ deleteProfile & token: AuthToken & void & AuthError, NotFound \\
 \subsection{Semantics}
 
 \subsubsection{State Variables}
-None. This module is stateless.
+None. (Stateless HTTP routes; no persistent state is maintained by this module.)
 
 \subsubsection{Environment Variables}
 \begin{itemize}
-    \item \textbf{RequestAdapter}: An environment capable of receiving and routing service requests.
-    \item \textbf{ResponseAdapter}: An environment capable of sending responses back to the caller.
+    \item \textbf{HTTPServer}: The web server/runtime that receives HTTP requests and dispatches routes.
+    \item \textbf{Auth}: Authentication service provided by M4.
+    \item \textbf{Repository}: Persistence interface provided by M5.
+    \item \textbf{Audit}: Audit logging service provided by M6.
 \end{itemize}
 
 \subsubsection{Assumptions}
 \begin{itemize}
-    \item The \textbf{RequestAdapter} is running and correctly routes to this module's services.
-    \item Modules M3, M4, and M5 are available.
-    \item \texttt{AuthToken} is an opaque type verifiable by M4.
+    \item Requests and responses follow the REST endpoint structure and payload schemas defined by the system.
+    \item Authentication-protected endpoints include a session token (e.g., \texttt{Authorization} header).
+    \item M4, M5, and M6 are correctly configured and available in the server runtime.
 \end{itemize}
 
 \subsubsection{Access Routine Semantics}
-\noindent\textbf{signup}(\textit{creds})
+
+\noindent\textbf{postRegister}(\textit{req})
 \begin{itemize}
-    \item transition: Validates \textit{creds}. Calls \texttt{M4.registerUser(creds.username, creds.password)}. On success, calls \texttt{M5.createUser(data)}.
-    \item output: Returns the newly created \texttt{User} abstract data type.
-    \item exception: \texttt{ValidationError} if credentials format is invalid. \texttt{AuthError} if user already exists.
+    \item transition: Validate \textit{req} payload (username/password). Call \textbf{Auth.createAccount}. Log an authentication audit event via \textbf{Audit.logAuthEvent}.
+    \item output: Return \texttt{HttpResponse} containing success status and auth token (on success).
+    \item exception: \texttt{BadRequest} if payload invalid. Propagate \texttt{UsernameTaken}/\texttt{WeakPassword} from authentication logic.
 \end{itemize}
 
-\noindent\textbf{login}(\textit{creds})
+\noindent\textbf{postLogin}(\textit{req})
 \begin{itemize}
-    \item transition: Validates \textit{creds}. Calls \texttt{M4.loginUser(creds.username, creds.password)} to generate \texttt{AuthToken}.
-    \item output: Returns the generated \texttt{AuthToken}.
-    \item exception: \texttt{ValidationError} if credentials format is invalid. \texttt{InvalidCredentials} if authentication fails.
+    \item transition: Validate \textit{req}. Call \textbf{Auth.login}. Log auth event via \textbf{Audit.logAuthEvent}.
+    \item output: Return \texttt{HttpResponse} containing auth token (on success).
+    \item exception: \texttt{BadRequest} if payload invalid. \texttt{InvalidCredentials}/\texttt{AccountNotFound} if login fails.
 \end{itemize}
 
-\noindent\textbf{createGame}(\textit{token, options})
+\noindent\textbf{postGuestSession}(\textit{req})
 \begin{itemize}
-    \item transition: Calls \texttt{M4.verifyToken(token)} to get a UserID. On success, calls \texttt{M3.createLobby(UserID, options)}.
-    \item output: Returns the \texttt{GameSession} abstract data type.
-    \item exception: \texttt{AuthError} if \textit{token} is invalid. \texttt{LobbyError} if lobby creation fails.
+    \item transition: Validate \textit{req}. Call \textbf{Auth.createGuestSession}. Log auth event via \textbf{Audit.logAuthEvent}.
+    \item output: Return \texttt{HttpResponse} containing guest token.
+    \item exception: \texttt{BadRequest} if payload invalid.
 \end{itemize}
 
-\noindent\textbf{getProfile}(\textit{token})
+\noindent\textbf{postLogout}(\textit{req})
 \begin{itemize}
-    \item transition: Calls \texttt{M4.verifyToken(token)} to get a UserID. On success, calls \texttt{M5.getUserProfile(UserID)}.
-    \item output: Returns the \texttt{UserProfile} abstract data type.
-    \item exception: \texttt{AuthError} if \textit{token} is invalid. \texttt{NotFound} if the user profile does not exist.
+    \item transition: Validate \textit{req}. Call \textbf{Auth.logout}. Log auth event via \textbf{Audit.logAuthEvent}.
+    \item output: Return \texttt{HttpResponse} confirming logout.
+    \item exception: \texttt{BadRequest} if payload invalid. \texttt{InvalidToken} if token invalid.
 \end{itemize}
 
-\noindent\textbf{updateProfile}(\textit{token, profile})
+\noindent\textbf{getProfile}(\textit{req})
 \begin{itemize}
-    \item transition: Calls \texttt{M4.verifyToken(token)} to get a UserID. Validates \textit{profile} data. On success, calls \texttt{M5.updateUserProfile(UserID, profile)}.
-    \item output: Returns the updated \texttt{UserProfile}.
-    \item exception: \texttt{AuthError}. \texttt{ValidationError}. \texttt{NotFound}.
+    \item transition: Verify token from \textit{req} by calling \textbf{Auth.verifyToken}. On success, read user profile from \textbf{Repository} (e.g., \texttt{getPlayerProfile}/equivalent). Log a profile access event via \textbf{Audit.logSystemEvent}.
+    \item output: Return \texttt{HttpResponse} containing the user profile data.
+    \item exception: \texttt{Unauthorized} if token invalid/expired. \texttt{RecordNotFound} if profile/user does not exist.
 \end{itemize}
 
-\noindent\textbf{deleteProfile}(\textit{token})
+\noindent\textbf{putProfile}(\textit{req})
 \begin{itemize}
-    \item transition: Calls \texttt{M4.verifyToken(token)} to get a UserID. On success, calls \texttt{M5.deleteUser(UserID)}.
-    \item output: \texttt{void}.
-    \item exception: \texttt{AuthError}. \texttt{NotFound}.
+    \item transition: Verify token via \textbf{Auth.verifyToken}. Validate profile update payload. Update profile via \textbf{Repository} (e.g., \texttt{updatePlayerProfile}/equivalent). Log update event via \textbf{Audit.logSystemEvent}.
+    \item output: Return \texttt{HttpResponse} containing updated profile.
+    \item exception: \texttt{BadRequest} if payload invalid. \texttt{Unauthorized} if token invalid/expired. \texttt{RecordNotFound} if user/profile not found.
+\end{itemize}
+
+\noindent\textbf{postNewGame}(\textit{req})
+\begin{itemize}
+    \item transition: Verify token via \textbf{Auth.verifyToken}. Validate request body (game setup parameters). Persist/initialize game bootstrap data via \textbf{Repository} as required by the SRS. Log gameplay/system event via \textbf{Audit.logGameplayEvent} or \textbf{Audit.logSystemEvent}. (Real-time gameplay proceeds through M2.)
+    \item output: Return \texttt{HttpResponse} confirming game creation/bootstrapping and any returned identifiers.
+    \item exception: \texttt{BadRequest} if payload invalid. \texttt{Unauthorized} if token invalid/expired.
+\end{itemize}
+
+\noindent\textbf{getHealth}(\textit{req})
+\begin{itemize}
+    \item transition: Return basic service status (optionally include shallow checks of dependencies).
+    \item output: Return \texttt{HttpResponse} with status \texttt{200 OK} when the API server is up.
+    \item exception: None.
 \end{itemize}
 
 \subsubsection{Local Functions}
@@ -267,9 +286,11 @@ None.
 
 \subsubsection{Considerations}
 \begin{itemize}
-    \item The secret of this module is the definition of the service layer endpoints and the data serialization format (e.g., JSON) used for transport.
-    \item The web server implementation (e.g., Express) \textit{uses} this module, it is not \textit{part of} this module.
+    \item \textbf{Secret:} REST endpoint structure, request/response payload schemas, and HTTP conventions for stateless backend capabilities.
+    \item \textbf{Service:} exposes stateless HTTP routes for authentication, profile management, and bootstrapping new games as defined in the SRS; real-time gameplay is handled separately by M2.
+    \item This module should remain stateless; persistence and security concerns are delegated to M5 and M4, while operational logging is delegated to M6.
 \end{itemize}
+
 
 \newpage
 \section{MIS of Real-time Gateway Module (M2)}\label{sec:realtime-gateway-module}
@@ -280,6 +301,7 @@ Real-time Gateway
 \subsection{Uses}
 \begin{itemize}
     \item \hyperref[sec:authentication-module]{M4 Authentication Module}
+    \item \hyperref[sec:repository-module]{M5 Repository Module}
     \item \hyperref[sec:game-actions-module]{M15 Game Action Module}
 \end{itemize}
 
@@ -316,7 +338,7 @@ broadcastGameState & roomID: GameID, state: GameState & void & \\
 \begin{itemize}
     \item The \textbf{RealtimeAdapter} is running and forwards events to these handlers.
     \item \texttt{AuthToken} (inside \texttt{JoinGameData}) is verifiable by M4.
-    \item M19 is available to process game logic.
+    \item M15 provides the legality check for the "move" operation and the state evolution.
 \end{itemize}
 \subsubsection{Access Routine Semantics}
 \noindent\textbf{handleConnection}(\textit{socket})
@@ -433,9 +455,7 @@ None.
 Authentication
 
 \subsection{Uses}
-\begin{itemize}
-    \item \hyperref[sec:repository-module]{M5 Repository Module}
-\end{itemize}
+None.
 
 \subsection{Syntax}
 
@@ -445,14 +465,17 @@ None.
 \subsubsection{Exported Access Programs}
 
 \begin{center}
-\begin{tabular}{p{4cm} p{5cm} p{3.5cm} p{3.5cm}}
+\begin{tabular}{p{4.5cm} p{4.5cm} p{3.5cm} p{3.5cm}}
 \toprule
 \textbf{Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
 \midrule
-registerUser & username: string, password: string & User & UserExists, ValidationError \\
-loginUser & username: string, password: string & AuthToken & InvalidCredentials, ValidationError \\
-verifyToken & token: AuthToken & UserID & TokenExpired, InvalidCredentials \\
-manageGuestSession & - & AuthToken & SessionError \\
+createAccount & username: string, password: string & AuthResult & UsernameTaken, WeakPassword, CredentialStoreError \\
+login & username: string, password: string & AuthResult & InvalidCredentials, AccountNotFound, CredentialStoreError \\
+createGuestSession & deviceId: string & AuthResult & CredentialStoreError \\
+logout & token: SessionToken & void & InvalidToken \\
+issueToken & userId: UserID, role: UserRole & SessionToken & TokenSigningError \\
+verifyToken & token: SessionToken & TokenClaims & InvalidToken, ExpiredToken, TokenSigningError \\
+refreshToken & token: SessionToken & SessionToken & InvalidToken, ExpiredToken, TokenSigningError \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -460,48 +483,75 @@ manageGuestSession & - & AuthToken & SessionError \\
 \subsection{Semantics}
 
 \subsubsection{State Variables}
-None. This module is stateless.
+\begin{itemize}
+    \item \textbf{hashConfig}: Configuration for password hashing (e.g., algorithm selection, cost parameters).
+    \item \textbf{tokenSigner}: A component holding token-signing capability (e.g., HMAC secret or private key handle).
+    \item \textbf{credentialStore}: Internal credential storage mechanism used by this module (implementation-defined).
+    \item \textbf{activeSessions}: A mapping from \texttt{SessionToken} to session metadata (e.g., \texttt{userId}, \texttt{expiry}, \texttt{role}). (If sessions are stateless JWTs, this may be minimal or omitted.)
+\end{itemize}
 
 \subsubsection{Environment Variables}
 \begin{itemize}
-    \item \textbf{CryptoLibrary}: An instance of the password hashing library (e.g., bcrypt).
-    \item \textbf{JWT\_SECRET\_KEY}: The secret key used for signing and verifying JSON Web Tokens (AuthToken), read from a secure environment.
+    \item \textbf{TokenSigningKey}: Secret key material used to sign/verify tokens (stored securely outside the codebase).
+    \item \textbf{SystemClock}: Source of current time used for expiry validation.
 \end{itemize}
 
 \subsubsection{Assumptions}
 \begin{itemize}
-    \item The \textbf{CryptoLibrary} is properly configured.
-    \item The \textbf{JWT\_SECRET\_KEY} is securely provided to the environment.
-    \item Module M5 is available for database operations.
+    \item Password hashing configuration is correctly set and kept consistent across deployments.
+    \item \textbf{TokenSigningKey} is available and protected (not exposed to clients).
+    \item The internal \textbf{credentialStore} is available and correctly initialized.
 \end{itemize}
 
 \subsubsection{Access Routine Semantics}
-\noindent\textbf{registerUser}(\textit{username, password})
+
+\noindent\textbf{createAccount}(\textit{username, password})
 \begin{itemize}
-    \item transition: Validates \textit{username} and \textit{password} formats. Calls \texttt{M5.findUserByUsername(username)} to check for existence. Hashes and salts the \textit{password} using \textbf{CryptoLibrary}. Calls \texttt{M5.createUser(username, hashedPassword)}.
-    \item output: Returns the newly created \texttt{User} object.
-    \item exception: \texttt{UserExists} if the username is already taken. \texttt{ValidationError} if inputs are malformed.
+    \item transition: Validate \textit{username} format and \textit{password} strength. Hash \textit{password} using \textbf{hashConfig}. Store account and credential info in \textbf{credentialStore}. Issue a session token for the new account via \textbf{issueToken}.
+    \item output: Return \texttt{AuthResult} containing (at minimum) a \texttt{SessionToken} and user identity information.
+    \item exception: \texttt{UsernameTaken} if \textit{username} already exists in \textbf{credentialStore}. \texttt{WeakPassword} if \textit{password} fails policy. \texttt{CredentialStoreError} if storage fails.
 \end{itemize}
 
-\noindent\textbf{loginUser}(\textit{username, password})
+\noindent\textbf{login}(\textit{username, password})
 \begin{itemize}
-    \item transition: Calls \texttt{M5.findUserByUsername(username)} to retrieve the stored user hash. Compares the plaintext \textit{password} with the stored hash using \textbf{CryptoLibrary}. If they match, generates a new \texttt{AuthToken} (JWT) signed with \textbf{JWT\_SECRET\_KEY} containing the \texttt{UserID}.
-    \item output: Returns the newly generated \texttt{AuthToken}.
-    \item exception: \texttt{InvalidCredentials} if the user is not found or the password does not match. \texttt{ValidationError} if inputs are malformed.
+    \item transition: Retrieve credential record for \textit{username} from \textbf{credentialStore}. Verify \textit{password} against stored hash. On success, issue a new token via \textbf{issueToken}.
+    \item output: Return \texttt{AuthResult} containing a valid \texttt{SessionToken}.
+    \item exception: \texttt{AccountNotFound} if \textit{username} does not exist. \texttt{InvalidCredentials} if verification fails. \texttt{CredentialStoreError} if retrieval fails.
+\end{itemize}
+
+\noindent\textbf{createGuestSession}(\textit{deviceId})
+\begin{itemize}
+    \item transition: Create or reuse a guest identity bound to \textit{deviceId} (policy-defined). Store minimal guest metadata in \textbf{credentialStore} if required. Issue a guest token via \textbf{issueToken}.
+    \item output: Return \texttt{AuthResult} containing a guest \texttt{SessionToken}.
+    \item exception: \texttt{CredentialStoreError} if storage fails.
+\end{itemize}
+
+\noindent\textbf{logout}(\textit{token})
+\begin{itemize}
+    \item transition: Invalidate \textit{token}. If tokens are stateless, record the token (or its identifier) in a denylist until expiry; otherwise remove from \textbf{activeSessions}.
+    \item output: \texttt{void}.
+    \item exception: \texttt{InvalidToken} if \textit{token} is malformed or cannot be invalidated under the configured policy.
+\end{itemize}
+
+\noindent\textbf{issueToken}(\textit{userId, role})
+\begin{itemize}
+    \item transition: Construct token claims (e.g., \textit{userId}, \textit{role}, issued-at, expiry). Sign token using \textbf{tokenSigner} backed by \textbf{TokenSigningKey}.
+    \item output: Return a signed \texttt{SessionToken}.
+    \item exception: \texttt{TokenSigningError} if signing fails or key material is unavailable.
 \end{itemize}
 
 \noindent\textbf{verifyToken}(\textit{token})
 \begin{itemize}
-    \item transition: Validates the \textit{token}'s signature and expiration using \textbf{JWT\_SECRET\_KEY}. If valid, parses the \texttt{UserID} from the token payload.
-    \item output: Returns the \texttt{UserID} extracted from the token.
-    \item exception: \texttt{TokenExpired} if the token is past its expiry date. \texttt{InvalidCredentials} if the token signature is invalid or the token is malformed.
+    \item transition: Verify signature using \textbf{TokenSigningKey}. Validate expiry against \textbf{SystemClock}. Optionally check denylist / \textbf{activeSessions}.
+    \item output: Return \texttt{TokenClaims} extracted from the token.
+    \item exception: \texttt{InvalidToken} if signature/format validation fails. \texttt{ExpiredToken} if expiry has passed. \texttt{TokenSigningError} if verification fails due to key issues.
 \end{itemize}
 
-\noindent\textbf{manageGuestSession}(\,)
+\noindent\textbf{refreshToken}(\textit{token})
 \begin{itemize}
-    \item transition: Generates a temporary \texttt{AuthToken} (JWT) with a special "guest" \texttt{UserID} or a temporary unique identifier.
-    \item output: Returns the \texttt{AuthToken} for the guest session.
-    \item exception: \texttt{SessionError} if token generation fails.
+    \item transition: Verify \textit{token} via \textbf{verifyToken}. If eligible for refresh, issue a new token with extended expiry via \textbf{issueToken}. Optionally revoke the old token (denylist) depending on policy.
+    \item output: Return a new \texttt{SessionToken}.
+    \item exception: \texttt{InvalidToken} if verification fails. \texttt{ExpiredToken} if the token is no longer refreshable. \texttt{TokenSigningError} if issuing the new token fails.
 \end{itemize}
 
 \subsubsection{Local Functions}
@@ -509,10 +559,12 @@ None.
 
 \subsubsection{Considerations}
 \begin{itemize}
-    \item The secret of this module is the password hashing algorithm (bcrypt), salt generation, JWT structure, and the \textbf{JWT\_SECRET\_KEY}.
-    \item M1 relies on this module for handling user authentication endpoints.
-    \item M2 relies on \texttt{verifyToken} to authenticate WebSocket connections.
+    \item \textbf{Secret:} password hashing configuration, credential storage details, and token-signing keys.
+    \item \textbf{Service:} creates accounts, validates logins, manages guest sessions, and issues/verifies tokens used by the rest of the backend.
+    \item Other backend modules should not handle raw passwords or token signing directly; they should rely on this module's access routines.
+    \item If hashing algorithms or token mechanisms change, modifications are localized to this module; callers remain unchanged.
 \end{itemize}
+
 \newpage
 \section{MIS of Repository Module (M5)}\label{sec:repository-module}
 
@@ -520,9 +572,7 @@ None.
 Repository
 
 \subsection{Uses}
-\begin{itemize}
-    \item \hyperref[sec:database-module]{M22 Database Module}
-\end{itemize}
+None.
 
 \subsection{Syntax}
 
@@ -536,12 +586,16 @@ None.
 \toprule
 \textbf{Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
 \midrule
-findUserByUsername & username: string & User & RecordNotFound, DatabaseConnectionError \\
-createUser & data: UserData & User & UniqueConstraintViolation, DatabaseConnectionError \\
-saveGameResult & result: GameResult & void & DatabaseConnectionError \\
-getUserProfile & userID: UserID & UserProfile & RecordNotFound, DatabaseConnectionError \\
-updateUserProfile & userID: UserID, data: UserProfile & UserProfile & RecordNotFound, DatabaseConnectionError \\
-deleteUser & userID: UserID & void & RecordNotFound, DatabaseConnectionError \\
+findPlayerByUsername & username: string & Player & RecordNotFound, DatabaseConnectionError \\
+findPlayerById & playerId: PlayerID & Player & RecordNotFound, DatabaseConnectionError \\
+createPlayer & data: PlayerData & Player & UniqueConstraintViolation, DatabaseConnectionError \\
+updatePlayerProfile & playerId: PlayerID, data: PlayerProfileData & Player & RecordNotFound, DatabaseConnectionError \\
+storeCredential & playerId: PlayerID, cred: CredentialData & void & RecordNotFound, UniqueConstraintViolation, DatabaseConnectionError \\
+getCredentialByUsername & username: string & CredentialRecord & RecordNotFound, DatabaseConnectionError \\
+saveMatchResult & result: MatchResult & void & DatabaseConnectionError \\
+getMatchHistory & playerId: PlayerID, limit: nat, offset: nat & seq of MatchResult & DatabaseConnectionError \\
+getPlayerStats & playerId: PlayerID & PlayerStats & RecordNotFound, DatabaseConnectionError \\
+deletePlayer & playerId: PlayerID & void & RecordNotFound, DatabaseConnectionError \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -550,62 +604,92 @@ deleteUser & userID: UserID & void & RecordNotFound, DatabaseConnectionError \\
 
 \subsubsection{State Variables}
 \begin{itemize}
-    \item \textbf{dbConnectionPool}: A connection pool managing active connections to the M22 database.
+    \item \textbf{dbConnectionPool}: A connection pool managing active connections to the PostgreSQL database.
 \end{itemize}
 
 \subsubsection{Environment Variables}
 \begin{itemize}
-    \item \textbf{DatabaseInstance (M21)}: The instance of the PostgreSQL database software (M22) on which this module executes queries.
+    \item \textbf{PostgreSQLServer}: The external PostgreSQL database instance that executes all SQL queries.
+    \item \textbf{DBConnectionString}: A secure configuration value used to initialize database connectivity.
 \end{itemize}
 
 \subsubsection{Assumptions}
 \begin{itemize}
-    \item The \textbf{DatabaseInstance} is running and accessible.
-    \item A database connection string is securely provided to the environment.
-    \item The database schema (tables, columns, relations) has been initialized and matches the queries defined within this module.
+    \item \textbf{PostgreSQLServer} is running and reachable from the server-side runtime.
+    \item \textbf{DBConnectionString} is provided securely and grants appropriate permissions.
+    \item The database schema for players, credentials, match history, and statistics is initialized and consistent with this module's queries.
 \end{itemize}
 
 \subsubsection{Access Routine Semantics}
-\noindent\textbf{findUserByUsername}(\textit{username})
+
+\noindent\textbf{findPlayerByUsername}(\textit{username})
 \begin{itemize}
-    \item transition: Acquires a connection from \textbf{dbConnectionPool}. Executes a SQL \texttt{SELECT} query to find the user by \textit{username}.
-    \item output: Returns the \texttt{User} object if found.
-    \item exception: \texttt{RecordNotFound} if no user with \textit{username} is found. \texttt{DatabaseConnectionError} if the query fails.
+    \item transition: Acquire a connection from \textbf{dbConnectionPool}. Execute a SQL \texttt{SELECT} over the player table filtered by \textit{username}.
+    \item output: Return the \texttt{Player} record.
+    \item exception: \texttt{RecordNotFound} if no player matches \textit{username}. \texttt{DatabaseConnectionError} if query/connection fails.
 \end{itemize}
 
-\noindent\textbf{createUser}(\textit{data})
+\noindent\textbf{findPlayerById}(\textit{playerId})
 \begin{itemize}
-    \item transition: Acquires a connection from \textbf{dbConnectionPool}. Executes a SQL \texttt{INSERT} query to create a new user with \textit{data}.
-    \item output: Returns the newly created \texttt{User} object (e.g., with database-generated ID).
-    \item exception: \texttt{UniqueConstraintViolation} if the username already exists. \texttt{DatabaseConnectionError} if the query fails.
+    \item transition: Acquire a connection. Execute a SQL \texttt{SELECT} over the player table filtered by \textit{playerId}.
+    \item output: Return the \texttt{Player} record.
+    \item exception: \texttt{RecordNotFound} if \textit{playerId} does not exist. \texttt{DatabaseConnectionError} if query/connection fails.
 \end{itemize}
 
-\noindent\textbf{saveGameResult}(\textit{result})
+\noindent\textbf{createPlayer}(\textit{data})
 \begin{itemize}
-    \item transition: Acquires a connection from \textbf{dbConnectionPool}. Executes a SQL \texttt{INSERT} query to store the \textit{result} in the game history table.
+    \item transition: Acquire a connection. Execute a SQL \texttt{INSERT} to create a new player using \textit{data}.
+    \item output: Return the created \texttt{Player} (including generated \texttt{PlayerID}).
+    \item exception: \texttt{UniqueConstraintViolation} if a unique field (e.g., username) already exists. \texttt{DatabaseConnectionError} if query/connection fails.
+\end{itemize}
+
+\noindent\textbf{updatePlayerProfile}(\textit{playerId, data})
+\begin{itemize}
+    \item transition: Acquire a connection. Execute a SQL \texttt{UPDATE} to modify the profile fields for \textit{playerId} using \textit{data}.
+    \item output: Return the updated \texttt{Player}.
+    \item exception: \texttt{RecordNotFound} if \textit{playerId} does not exist. \texttt{DatabaseConnectionError} if query/connection fails.
+\end{itemize}
+
+\noindent\textbf{storeCredential}(\textit{playerId, cred})
+\begin{itemize}
+    \item transition: Acquire a connection. Execute a SQL \texttt{INSERT} (or \texttt{UPSERT}, if supported by the schema) to store credential material for \textit{playerId}.
     \item output: \texttt{void}.
-    \item exception: \texttt{DatabaseConnectionError} if the query fails.
+    \item exception: \texttt{RecordNotFound} if \textit{playerId} does not exist. \texttt{UniqueConstraintViolation} if the credential record violates a uniqueness rule. \texttt{DatabaseConnectionError} if query/connection fails.
 \end{itemize}
 
-\noindent\textbf{getUserProfile}(\textit{userID})
+\noindent\textbf{getCredentialByUsername}(\textit{username})
 \begin{itemize}
-    \item transition: Acquires a connection from \textbf{dbConnectionPool}. Executes a SQL \texttt{SELECT} query to retrieve the user's profile based on \textit{userID}.
-    \item output: Returns the \texttt{UserProfile} object.
-    \item exception: \texttt{RecordNotFound} if \textit{userID} is not found. \texttt{DatabaseConnectionError} if the query fails.
+    \item transition: Acquire a connection. Execute a SQL \texttt{SELECT} joining username $\rightarrow$ player $\rightarrow$ credential record (schema-dependent).
+    \item output: Return the \texttt{CredentialRecord}.
+    \item exception: \texttt{RecordNotFound} if no credential is found for \textit{username}. \texttt{DatabaseConnectionError} if query/connection fails.
 \end{itemize}
 
-\noindent\textbf{updateUserProfile}(\textit{userID, data})
+\noindent\textbf{saveMatchResult}(\textit{result})
 \begin{itemize}
-    \item transition: Acquires a connection from \textbf{dbConnectionPool}. Executes a SQL \texttt{UPDATE} query to modify the user's profile matching \textit{userID} with new \textit{data}.
-    \item output: Returns the updated \texttt{UserProfile} object.
-    \item exception: \texttt{RecordNotFound} if \textit{userID} is not found. \texttt{DatabaseConnectionError} if the query fails.
-\end{itemize}
-
-\noindent\textbf{deleteUser}(\textit{userID})
-\begin{itemize}
-    \item transition: Acquires a connection from \textbf{dbConnectionPool}. Executes a SQL \texttt{DELETE} query to remove the user matching \textit{userID}.
+    \item transition: Acquire a connection. Execute a SQL \texttt{INSERT} into match history / results tables using \textit{result}.
     \item output: \texttt{void}.
-    \item exception: \texttt{RecordNotFound} if \textit{userID} is not found. \texttt{DatabaseConnectionError} if the query fails.
+    \item exception: \texttt{DatabaseConnectionError} if query/connection fails.
+\end{itemize}
+
+\noindent\textbf{getMatchHistory}(\textit{playerId, limit, offset})
+\begin{itemize}
+    \item transition: Acquire a connection. Execute a SQL \texttt{SELECT} over match history filtered by \textit{playerId}, ordered by time, returning a window defined by \textit{limit} and \textit{offset}.
+    \item output: Return a sequence of \texttt{MatchResult}.
+    \item exception: \texttt{DatabaseConnectionError} if query/connection fails.
+\end{itemize}
+
+\noindent\textbf{getPlayerStats}(\textit{playerId})
+\begin{itemize}
+    \item transition: Acquire a connection. Execute a SQL \texttt{SELECT} (and/or aggregate queries) to retrieve computed statistics for \textit{playerId}.
+    \item output: Return \texttt{PlayerStats}.
+    \item exception: \texttt{RecordNotFound} if \textit{playerId} does not exist (or has no stats record per schema). \texttt{DatabaseConnectionError} if query/connection fails.
+\end{itemize}
+
+\noindent\textbf{deletePlayer}(\textit{playerId})
+\begin{itemize}
+    \item transition: Acquire a connection. Execute SQL \texttt{DELETE} operations (possibly cascading per schema) to remove the player and related records.
+    \item output: \texttt{void}.
+    \item exception: \texttt{RecordNotFound} if \textit{playerId} does not exist. \texttt{DatabaseConnectionError} if query/connection fails.
 \end{itemize}
 
 \subsubsection{Local Functions}
@@ -613,10 +697,12 @@ None.
 
 \subsubsection{Considerations}
 \begin{itemize}
-    \item The secret of this module is the database schema, all SQL queries, and connection pooling.
-    \item Other modules (M1, M4) are completely unaware of SQL. They call abstract functions like \texttt{getUserProfile}.
-    \item If the database is migrated from PostgreSQL (M22) to another system, only M5 needs to be rewritten; all other modules remain unchanged.
+    \item \textbf{Secret:} the database implementation (PostgreSQL), schema design, optimized SQL queries, and database access strategies (e.g., pooling, transactions).
+    \item \textbf{Service:} provides a clean persistence interface for storing and retrieving players, credentials, match history, and statistics, shielding callers from database specifics.
+    \item This module abstracts all CRUD operations and schema details; callers never issue SQL directly.
+    \item If the persistence technology changes (e.g., PostgreSQL to another DB), only this module needs to be rewritten; callers remain unchanged.
 \end{itemize}
+
 \newpage
 \section{MIS of Audit Module (M6)}\label{sec:audit-module}
 
@@ -624,14 +710,15 @@ None.
 Audit
 
 \subsection{Uses}
-\begin{itemize}
-    \item \hyperref[sec:os-module]{M20 Operating System Module}
-\end{itemize}
+None.
 
 \subsection{Syntax}
 
 \subsubsection{Exported Constants}
-None.
+\begin{itemize}
+    \item \textbf{DefaultRetentionDays}: nat := 30
+    \item \textbf{MaxEventPayloadSize}: nat := 8192 \quad (bytes)
+\end{itemize}
 
 \subsubsection{Exported Access Programs}
 
@@ -640,9 +727,12 @@ None.
 \toprule
 \textbf{Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
 \midrule
-log.info & message: string & void & LogWriteError \\
-log.warn & message: string & void & LogWriteError \\
-log.error & message: string & void & LogWriteError \\
+logAuthEvent & event: AuthAuditEvent & void & LogStoreError \\
+logGameplayEvent & event: GameplayAuditEvent & void & LogStoreError \\
+logSystemEvent & event: SystemAuditEvent & void & LogStoreError \\
+queryAuditEvents & filter: AuditQueryFilter & seq of AuditEvent & LogStoreError \\
+purgeExpiredEvents & retentionDays: nat & nat & LogStoreError \\
+redactEventPayload & eventId: AuditEventID, fields: seq of string & void & RecordNotFound, LogStoreError \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -651,40 +741,65 @@ log.error & message: string & void & LogWriteError \\
 
 \subsubsection{State Variables}
 \begin{itemize}
-    \item \textbf{loggerInstance}: An instance of the configured logging library (e.g., Winston).
+    \item \textbf{retentionPolicyDays}: nat := \textbf{DefaultRetentionDays}
+    \item \textbf{logStore}: Internal storage target/driver for audit events (implementation-defined; may be DB table, file sink, external log service).
 \end{itemize}
 
 \subsubsection{Environment Variables}
 \begin{itemize}
-    \item \textbf{LogStorage}: The destination for log output, typically a file on the M20 filesystem.
+    \item \textbf{SystemClock}: Source of current time for timestamps and retention enforcement.
+    \item \textbf{AuditStorageConfig}: Configuration describing storage target(s), retention, and access credentials for the logging backend.
 \end{itemize}
 
 \subsubsection{Assumptions}
 \begin{itemize}
-    \item The \textbf{loggerInstance} is successfully initialized when the module is loaded.
-    \item The \textbf{LogStorage} (filesystem) provided by M20 is writable.
+    \item The event schema (fields for authentication/gameplay/system events) matches the storage format used by \textbf{logStore}.
+    \item The storage target(s) configured by \textbf{AuditStorageConfig} are reachable during normal operation.
+    \item Retention policies are chosen to satisfy operational debugging, security, and compliance requirements.
 \end{itemize}
 
 \subsubsection{Access Routine Semantics}
-\noindent\textbf{log.info}(\textit{message})
+
+\noindent\textbf{logAuthEvent}(\textit{event})
 \begin{itemize}
-    \item transition: Uses the \textbf{loggerInstance} to format the \textit{message} as an 'info' level entry (adhering to the hidden log format) and write it to \textbf{LogStorage}.
+    \item transition: Validate \textit{event} payload size $\le$ \textbf{MaxEventPayloadSize}. Attach timestamp from \textbf{SystemClock}. Serialize and append/store in \textbf{logStore} using the authentication-event schema.
     \item output: \texttt{void}.
-    \item exception: \texttt{LogWriteError} if writing to \textbf{LogStorage} fails.
+    \item exception: \texttt{LogStoreError} if storage/append fails.
 \end{itemize}
 
-\noindent\textbf{log.warn}(\textit{message})
+\noindent\textbf{logGameplayEvent}(\textit{event})
 \begin{itemize}
-    \item transition: Uses the \textbf{loggerInstance} to format the \textit{message} as a 'warn' level entry and write it to \textbf{LogStorage}.
+    \item transition: Validate payload size and required fields. Attach timestamp. Serialize and append/store in \textbf{logStore} using the gameplay-event schema.
     \item output: \texttt{void}.
-    \item exception: \texttt{LogWriteError} if writing to \textbf{LogStorage} fails.
+    \item exception: \texttt{LogStoreError} if storage/append fails.
 \end{itemize}
 
-\noindent\textbf{log.error}(\textit{message})
+\noindent\textbf{logSystemEvent}(\textit{event})
 \begin{itemize}
-    \item transition: Uses the \textbf{loggerInstance} to format the \textit{message} as an 'error' level entry and write it to \textbf{LogStorage}.
+    \item transition: Validate payload size and required fields. Attach timestamp. Serialize and append/store in \textbf{logStore} using the system-event schema.
     \item output: \texttt{void}.
-    \item exception: \texttt{LogWriteError} if writing to \textbf{LogStorage} fails.
+    \item exception: \texttt{LogStoreError} if storage/append fails.
+\end{itemize}
+
+\noindent\textbf{queryAuditEvents}(\textit{filter})
+\begin{itemize}
+    \item transition: Translate \textit{filter} constraints (time window, event type, user/session identifiers, severity, correlation id, etc.) into \textbf{logStore} query operations. Execute query against \textbf{logStore}. Apply any post-filters (e.g., pagination) as required.
+    \item output: Return a sequence of \texttt{AuditEvent} matching \textit{filter}.
+    \item exception: \texttt{LogStoreError} if querying fails.
+\end{itemize}
+
+\noindent\textbf{purgeExpiredEvents}(\textit{retentionDays})
+\begin{itemize}
+    \item transition: Compute cutoff time = \textbf{SystemClock} $-$ \textit{retentionDays}. Delete, archive, or compact entries older than cutoff according to \textbf{AuditStorageConfig} policy.
+    \item output: Return the number of events purged (nat).
+    \item exception: \texttt{LogStoreError} if purge/archive fails.
+\end{itemize}
+
+\noindent\textbf{redactEventPayload}(\textit{eventId, fields})
+\begin{itemize}
+    \item transition: Locate \textit{eventId} in \textbf{logStore}. Replace, mask, or remove specified \textit{fields} in the persisted payload (schema-dependent). Persist the redacted version and mark the record as redacted.
+    \item output: \texttt{void}.
+    \item exception: \texttt{RecordNotFound} if \textit{eventId} does not exist. \texttt{LogStoreError} if update/writeback fails.
 \end{itemize}
 
 \subsubsection{Local Functions}
@@ -692,9 +807,12 @@ None.
 
 \subsubsection{Considerations}
 \begin{itemize}
-    \item The secret of this module is the log format, the storage location (e.g., file path), and the log retention policy.
-    \item This module is used by other backend modules (M1, M2, M4, M5) to log important system events for debugging and security auditing.
+    \item \textbf{Secret:} the exact event schema, retention policy, and storage targets for operational logs.
+    \item \textbf{Service:} captures authentication, gameplay, and system events to support debugging, compliance, security, and user inquiries.
+    \item This module is a library utility; it should not impose dependencies on other modules.
+    \item If storage targets or retention strategies change, updates are localized to this module; event producers remain unchanged as long as the API is stable.
 \end{itemize}
+
 \newpage
 \section{MIS of Real-time Client Module (M7)}\label{sec:realtime-client-module}
 
@@ -850,33 +968,38 @@ None.
     \item This module acts as a controller view, deciding which page (M10, M11, M14) to display based on URL and authentication state.
 \end{itemize}
 \newpage
-\section{MIS of Authentication Client Module (M9)}\label{sec:auth-client-module}
+\section{MIS of Authentication Client Module (M9)}\label{sec:authentication-client-module}
 
 \subsection{Module}
 Authentication Client
 
 \subsection{Uses}
 \begin{itemize}
-    \item API Module \hyperref[sec:api-module]{M1}
-    \item Browser Runtime Module \hyperref[sec:browser-runtime-module]{M21 (Client Runtime)}
+    \item \hyperref[sec:api-module]{M1 API Module}
 \end{itemize}
 
 \subsection{Syntax}
 
 \subsubsection{Exported Constants}
-None.
+\begin{itemize}
+    \item \textbf{TokenStorageKey}: string := ``authToken''
+\end{itemize}
 
 \subsubsection{Exported Access Programs}
 
 \begin{center}
-\begin{tabular}{p{4cm} p{4.5cm} p{3.5cm} p{3.5cm}}
+\begin{tabular}{p{4.5cm} p{4.5cm} p{3.5cm} p{3.5cm}}
 \toprule
 \textbf{Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
 \midrule
-handleLogin & - & void & AuthUIError \\
-handleSignup & - & void & AuthUIError \\
-handleLogout & - & void & \\
-Render & props: ReactProps & JSX.Element & \\
+renderLoginForm & None & ViewModel & None \\
+renderSignupForm & None & ViewModel & None \\
+submitLogin & username: string, password: string & AuthViewState & InvalidInput, AuthFailed, NetworkError \\
+submitSignup & username: string, password: string & AuthViewState & InvalidInput, AuthFailed, NetworkError \\
+submitLogout & None & AuthViewState & NetworkError \\
+storeToken & token: string & void & TokenStorageError \\
+loadToken & None & OptionalString & TokenStorageError \\
+clearToken & None & void & TokenStorageError \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -885,49 +1008,79 @@ Render & props: ReactProps & JSX.Element & \\
 
 \subsubsection{State Variables}
 \begin{itemize}
-    \item \textbf{username}: string --- Stores the value from the username input field.
-    \item \textbf{password}: string --- Stores the value from the password input field.
-    \item \textbf{isLoading}: bool --- True if an API request (to M1) is in progress.
-    \item \textbf{error}: string --- Stores error messages from M1 (e.g., "Invalid credentials").
+    \item \textbf{currentToken}: OptionalString \quad (cached token currently held by the client)
+    \item \textbf{authStatus}: AuthStatus \quad (e.g., \texttt{LoggedOut}, \texttt{LoggingIn}, \texttt{LoggedIn}, \texttt{Error})
 \end{itemize}
 
 \subsubsection{Environment Variables}
 \begin{itemize}
-    \item \textbf{BrowserRuntime (M21)}: The browser environment providing DOM rendering and storage.
-    \item \textbf{AuthStorage}: The client-side storage mechanism (e.g., \texttt{localStorage}) used to persist the \texttt{AuthToken}.
+    \item \textbf{ClientRuntime}: Browser/client framework runtime that renders UI and handles events.
+    \item \textbf{SecureStorage}: Client-side storage mechanism (e.g., cookie/local storage/session storage), implementation-defined.
 \end{itemize}
 
 \subsubsection{Assumptions}
 \begin{itemize}
-    \item Module M1's authentication endpoints are available.
-    \item This module is rendered by M8 (Application Shell).
+    \item The client calls M1 for authentication-related HTTP requests (login/signup/logout).
+    \item Token storage is best-effort secure according to the chosen client storage mechanism.
+    \item Network calls may fail; the UI reports errors to the user.
 \end{itemize}
 
 \subsubsection{Access Routine Semantics}
-\noindent\textbf{handleLogin}(\,)
+
+\noindent\textbf{renderLoginForm}()
 \begin{itemize}
-    \item transition: Sets \textbf{isLoading} to \texttt{true}. Reads \textbf{username} and \textbf{password} from state. Calls \texttt{M1.login}. On success, stores the returned \texttt{AuthToken} in \textbf{AuthStorage}, sets \textbf{isLoading} to \texttt{false}, and updates global auth state. On failure, sets \textbf{isLoading} to \texttt{false} and populates \textbf{error}.
-    \item output: \texttt{void}.
-    \item exception: \texttt{AuthUIError} (represented in the \textbf{error} state) if M1 fails.
+    \item transition: Construct a login form view model (username/password inputs, submit action, error placeholder).
+    \item output: Return the \texttt{ViewModel} for the login form.
+    \item exception: None.
 \end{itemize}
 
-\noindent\textbf{handleSignup}(\,)
+\noindent\textbf{renderSignupForm}()
 \begin{itemize}
-    \item transition: Sets \textbf{isLoading} to \texttt{true}. Reads \textbf{username} and \textbf{password}. Calls \texttt{M1.signup}. Manages success or failure similar to \texttt{handleLogin}.
-    \item output: \texttt{void}.
-    \item exception: \texttt{AuthUIError} (represented in the \textbf{error} state) if M1 fails (e.g., user exists).
+    \item transition: Construct a signup form view model (username/password inputs, submit action, error placeholder).
+    \item output: Return the \texttt{ViewModel} for the signup form.
+    \item exception: None.
 \end{itemize}
 
-\noindent\textbf{handleLogout}(\,)
+\noindent\textbf{submitLogin}(\textit{username, password})
 \begin{itemize}
-    \item transition: Removes the \texttt{AuthToken} from \textbf{AuthStorage}. Updates global auth state (e.g., sets \texttt{currentUser} to \texttt{null}).
-    \item output: \texttt{void}.
+    \item transition: Validate inputs (non-empty, basic format checks). Call M1 authentication route (e.g., \texttt{postLogin}). On success, extract token from the response and call \textbf{storeToken}. Update \textbf{currentToken} and \textbf{authStatus}.
+    \item output: Return \texttt{AuthViewState} indicating success/failure and any user-facing message.
+    \item exception: \texttt{InvalidInput} if validation fails. \texttt{AuthFailed} if server rejects credentials. \texttt{NetworkError} if request fails.
 \end{itemize}
 
-\noindent\textbf{Render}(\textit{props})
+\noindent\textbf{submitSignup}(\textit{username, password})
 \begin{itemize}
-    \item transition: Reads all \textbf{State Variables} to determine UI.
-    \item output: Returns a \texttt{JSX.Element} containing login/signup forms, inputs, and buttons. UI reflects \textbf{isLoading} (e.g., spinner) and \textbf{error} (e.g., error message) states.
+    \item transition: Validate inputs. Call M1 authentication route (e.g., \texttt{postRegister}). On success, store returned token via \textbf{storeToken}. Update \textbf{currentToken} and \textbf{authStatus}.
+    \item output: Return \texttt{AuthViewState} indicating success/failure and any user-facing message.
+    \item exception: \texttt{InvalidInput} if validation fails. \texttt{AuthFailed} if server rejects signup. \texttt{NetworkError} if request fails.
+\end{itemize}
+
+\noindent\textbf{submitLogout}()
+\begin{itemize}
+    \item transition: If \textbf{currentToken} exists, call M1 logout route (e.g., \texttt{postLogout}) best-effort. Call \textbf{clearToken}. Set \textbf{currentToken} := None and \textbf{authStatus} := \texttt{LoggedOut}.
+    \item output: Return \texttt{AuthViewState} indicating the user is logged out.
+    \item exception: \texttt{NetworkError} if the logout request fails (token clearing still proceeds locally).
+\end{itemize}
+
+\noindent\textbf{storeToken}(\textit{token})
+\begin{itemize}
+    \item transition: Persist \textit{token} into \textbf{SecureStorage} under \textbf{TokenStorageKey}. Set \textbf{currentToken} := \textit{token}.
+    \item output: \texttt{void}.
+    \item exception: \texttt{TokenStorageError} if the storage operation fails.
+\end{itemize}
+
+\noindent\textbf{loadToken}()
+\begin{itemize}
+    \item transition: Read token from \textbf{SecureStorage} under \textbf{TokenStorageKey}. If present, set \textbf{currentToken} := token; otherwise set \textbf{currentToken} := None.
+    \item output: Return \textbf{currentToken}.
+    \item exception: \texttt{TokenStorageError} if the storage read fails.
+\end{itemize}
+
+\noindent\textbf{clearToken}()
+\begin{itemize}
+    \item transition: Remove \textbf{TokenStorageKey} from \textbf{SecureStorage}. Set \textbf{currentToken} := None.
+    \item output: \texttt{void}.
+    \item exception: \texttt{TokenStorageError} if removal fails.
 \end{itemize}
 
 \subsubsection{Local Functions}
@@ -935,8 +1088,9 @@ None.
 
 \subsubsection{Considerations}
 \begin{itemize}
-    \item The secret of this module is how and where the \texttt{AuthToken} is stored on the client (e.g., \texttt{localStorage} vs. cookie).
-    \item This module is responsible for both the UI of the forms and the client-side logic of communicating with M1.
+    \item \textbf{Secret:} decisions about secure token storage and the flows for refreshing or clearing credentials in the browser.
+    \item \textbf{Service:} presents login, signup, and logout experiences while coordinating with \textbf{M1} for authentication calls.
+    \item \textbf{Type Note:} \texttt{OptionalString = string $\cup$ \{None\}}.
 \end{itemize}
 
 \newpage
@@ -1164,83 +1318,104 @@ None.
 \section{MIS of Scoreboard View Module (M13)}\label{sec:scoreboard-view-module}
 
 \subsection{Module}
-The Scoreboard View Module handles the graphical display of player scores, game progress, and ranking updates. It receives score data from the Scoring Module and displays it in real time.
+Scoreboard View
 
 \subsection{Uses}
 \begin{itemize}
-    \item \hyperref[sec:scoring-module]{M17 Scoring Module}
     \item \hyperref[sec:base-conversion-module]{M18 Base Conversion Module}
 \end{itemize}
 
 \subsection{Syntax}
 
 \subsubsection{Exported Constants}
-None.
+\begin{itemize}
+    \item \textbf{DefaultScoreBase}: nat := 10
+    \item \textbf{AlternateScoreBase}: nat := 12
+\end{itemize}
 
 \subsubsection{Exported Access Programs}
 
 \begin{center}
-    \begin{tabular}{|l|l|l|l|}
-        \hline
-        \textbf{Routine Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
-        \hline
-        renderScores & ScoreList & None & None \\
-        \hline
-        updateScore & PlayerID, Integer & None & None \\
-        \hline
-        toggleBaseDisplay & None & None & None \\
-        \hline
-    \end{tabular}
+\begin{tabular}{p{4.5cm} p{4.5cm} p{3.5cm} p{3.5cm}}
+\toprule
+\textbf{Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
+\midrule
+renderScoreboard & data: ScoreboardData & ViewModel & InvalidScoreData \\
+toggleScoreBase & base: nat & void & InvalidBase \\
+formatScore & score: int, base: nat & string & InvalidBase, InvalidScoreData \\
+renderRoundSummary & summary: RoundSummaryData & ViewModel & InvalidScoreData \\
+animateRoundTransition & from: ViewModel, to: ViewModel & void & None \\
+\bottomrule
+\end{tabular}
 \end{center}
 
 \subsection{Semantics}
 
 \subsubsection{State Variables}
 \begin{itemize}
-    \item \textbf{playerScores}: mapping of PlayerID to score values.
-    \item \textbf{currentBase}: numeric base currently used for display (decimal or dozenal).
+    \item \textbf{currentBase}: nat := \textbf{DefaultScoreBase}
+    \item \textbf{lastRendered}: ViewModel \quad (cached view state for transitions/animations)
 \end{itemize}
 
 \subsubsection{Environment Variables}
 \begin{itemize}
-    \item UI rendering environment; display panel for real-time updates.
+    \item \textbf{ClientRuntime}: The client-side framework/runtime responsible for rendering UI components and handling user interactions.
+    \item \textbf{DisplayPreferences}: User/UI preferences (e.g., preferred score base, accessibility settings).
 \end{itemize}
 
 \subsubsection{Assumptions}
 \begin{itemize}
-    \item The Scoring Module provides consistent and valid score data.
+    \item Input scores in \texttt{ScoreboardData} are valid integers produced by the game logic.
+    \item Dozenal formatting uses the digit-symbol mapping provided by \textbf{M18}.
+    \item The client runtime supports re-rendering and simple transitions/animations.
 \end{itemize}
 
 \subsubsection{Access Routine Semantics}
-\noindent\textbf{renderScores}(\textit{ScoreList})
+
+\noindent\textbf{renderScoreboard}(\textit{data})
 \begin{itemize}
-    \item transition: draws the scoreboard table using the latest score values.
-    \item output: \texttt{None}.
+    \item transition: Validate \textit{data} (players, ordering, score values). For each displayed score, call \textbf{formatScore} to produce both decimal and dozenal strings (or the currently selected base). Produce a \texttt{ViewModel} suitable for rendering, and update \textbf{lastRendered}.
+    \item output: Return the constructed \texttt{ViewModel}.
+    \item exception: \texttt{InvalidScoreData} if \textit{data} is missing required fields or contains invalid score values.
 \end{itemize}
 
-\noindent\textbf{updateScore}(\textit{PlayerID, Integer})
+\noindent\textbf{toggleScoreBase}(\textit{base})
 \begin{itemize}
-    \item transition: refreshes the score of a single player and triggers a UI redraw.
-    \item output: \texttt{None}.
+    \item transition: If \textit{base} is \textbf{DefaultScoreBase} or \textbf{AlternateScoreBase}, set \textbf{currentBase} := \textit{base} and update \textbf{DisplayPreferences} if applicable; otherwise reject.
+    \item output: \texttt{void}.
+    \item exception: \texttt{InvalidBase} if \textit{base} is not supported.
 \end{itemize}
 
-\noindent\textbf{toggleBaseDisplay}(\,)
+\noindent\textbf{formatScore}(\textit{score, base})
 \begin{itemize}
-    \item transition: switches between base-10 and base-12 visual formats.
-    \item output: \texttt{None}.
+    \item transition: Validate \textit{score}. If \textit{base} = 10, convert \textit{score} to decimal string using standard formatting. If \textit{base} = 12, call \textbf{M18.decimalToDozenal}(\textit{score}) to obtain the dozenal string.
+    \item output: Return the formatted score string.
+    \item exception: \texttt{InvalidBase} if \textit{base} is unsupported. \texttt{InvalidScoreData} if \textit{score} is not a valid integer (implementation-defined).
+\end{itemize}
+
+\noindent\textbf{renderRoundSummary}(\textit{summary})
+\begin{itemize}
+    \item transition: Validate \textit{summary} fields (round index, deltas, totals). Format all displayed score values using \textbf{formatScore}. Produce a summary \texttt{ViewModel} for end-of-round display.
+    \item output: Return the summary \texttt{ViewModel}.
+    \item exception: \texttt{InvalidScoreData} if \textit{summary} is malformed or contains invalid scores.
+\end{itemize}
+
+\noindent\textbf{animateRoundTransition}(\textit{from, to})
+\begin{itemize}
+    \item transition: Run client-side UI animation/transition from \textit{from} to \textit{to} (implementation-defined). Update \textbf{lastRendered} := \textit{to}.
+    \item output: \texttt{void}.
+    \item exception: None.
 \end{itemize}
 
 \subsubsection{Local Functions}
-\begin{itemize}
-    \item \texttt{convertBase(value, base)}: converts a score integer into the appropriate base representation.
-\end{itemize}
+None.
 
 \subsubsection{Considerations}
 \begin{itemize}
-    \item The scoreboard must remain visually synchronized and readable regardless of player count or base selection.
+    \item \textbf{Secret:} presentation choices for multi-base score displays and animations for round summaries.
+    \item \textbf{Service:} shows standings after each round, presenting both decimal and dozenal scores in a clear, accessible format.
+    \item This is a client-side UI module; it should not contain core scoring logic, only formatting and presentation. Numeric base conversion details are delegated to \textbf{M18}.
 \end{itemize}
-
-
 
 \newpage
 \section{MIS of Profile View Module (M14)}\label{sec:profile-view-module}
@@ -1412,96 +1587,10 @@ None.
 \section{MIS of Rules Module (M16)}\label{sec:rules-module}
 
 \subsection{Module}
-Rules Module
+Rules
 
 \subsection{Uses}
 \begin{itemize}
-    \item \hyperref[sec:game-engine-module]{M15 Game Engine Module}
-    \item \hyperref[sec:scoring-module]{M17 Scoring Module}
-\end{itemize}
-
-\subsection{Syntax}
-
-\subsubsection{Exported Constants}
-\begin{itemize}
-    \item \textbf{MAX\_HAND\_SIZE} = 10
-    \item \textbf{BASE\_DOZENAL} = 12
-\end{itemize}
-
-\subsubsection{Exported Access Programs}
-
-\begin{center}
-    \begin{tabular}{p{4cm} p{3.5cm} p{3cm} p{4cm}}
-        \toprule
-        \textbf{Routine Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
-        \midrule
-        isValidMove & Card, Card & Boolean & None \\
-        isWildCard & Card & Boolean & None \\
-        getAllowedSuits & Card & SuitList & None \\
-        applyRuleVariant & GameState, VariantID & GameState & InvalidVariantException \\
-        \bottomrule
-    \end{tabular}
-\end{center}
-
-\subsection{Semantics}
-
-\subsubsection{State Variables}
-\begin{itemize}
-    \item Current rule set identifier (classic or dozenal).
-\end{itemize}
-
-\subsubsection{Environment Variables}
-\begin{itemize}
-    \item Access to game state and current discard card.
-\end{itemize}
-
-\subsubsection{Assumptions}
-\begin{itemize}
-    \item Game state is valid when rules are applied.
-\end{itemize}
-
-\subsubsection{Access Routine Semantics}
-\noindent\textbf{isValidMove}(\textit{Card, Card})
-\begin{itemize}
-    \item output: returns true if the new card matches suit or rank or follows wild rules.
-\end{itemize}
-
-\noindent\textbf{isWildCard}(\textit{Card})
-\begin{itemize}
-    \item output: determines if a card can change the active suit.
-\end{itemize}
-
-\noindent\textbf{getAllowedSuits}(\textit{Card})
-\begin{itemize}
-    \item output: returns all valid suits for a wild card declaration.
-\end{itemize}
-
-\noindent\textbf{applyRuleVariant}(\textit{GameState, VariantID})
-\begin{itemize}
-    \item transition: modifies the rule behavior based on selected configuration.
-    \item output: \texttt{GameState}.
-\end{itemize}
-
-\subsubsection{Local Functions}
-\begin{itemize}
-    \item \texttt{compareRanks(a,b)}: helper for rank matching.
-\end{itemize}
-
-\subsubsection{Considerations}
-\begin{itemize}
-    \item Rules must remain modular and easy to extend for new variants without changing engine code.
-\end{itemize}
-
-\newpage
-\newpage
-\section{MIS of Scoring Module (M17)}\label{sec:scoring-module}
-
-\subsection{Module}
-Scoring Module
-
-\subsection{Uses}
-\begin{itemize}
-    \item \hyperref[sec:game-engine-module]{M15 Game Engine Module}
     \item \hyperref[sec:base-conversion-module]{M18 Base Conversion Module}
 \end{itemize}
 
@@ -1509,136 +1598,290 @@ Scoring Module
 
 \subsubsection{Exported Constants}
 \begin{itemize}
-    \item \textbf{WIN\_BONUS} = 100
-    \item \textbf{CARD\_PENALTY} = 10
+    \item \textbf{DozenalBase}: nat := 12
+    \item \textbf{DozenalTarget}: string := ``10'' \quad (base-12)
+    \item \textbf{DozenalTargetDecimal}: nat := 12 \quad (= M18.dozenalToDecimal(\textbf{DozenalTarget}))
+    \item \textbf{InitialHandSize}: nat := 5
 \end{itemize}
 
 \subsubsection{Exported Access Programs}
 
 \begin{center}
-    \begin{tabular}{p{4cm} p{3.5cm} p{3cm} p{3cm}}
-        \toprule
-        \textbf{Routine Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
-        \midrule
-        calculateScore & PlayerState & Integer & None \\
-        updateScores & GameState & ScoreList & None \\
-        getWinner & GameState & PlayerID & None \\
-        \bottomrule
-    \end{tabular}
+\begin{tabular}{p{4.5cm} p{4.5cm} p{3.5cm} p{3.5cm}}
+\toprule
+\textbf{Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
+\midrule
+initRound & deck: Deck, players: seq of PlayerID & RoundState & InvalidDeck, InvalidPlayers \\
+isPlayable & state: RoundState, playerId: PlayerID, card: Card & boolean & InvalidRoundState, InvalidPlayer, InvalidCard \\
+getPlayableCards & state: RoundState, playerId: PlayerID & seq of Card & InvalidRoundState, InvalidPlayer \\
+applyPlay & state: RoundState, playerId: PlayerID, card: Card, chosenSuit: Suit? & RoundState & IllegalMove, InvalidRoundState, InvalidPlayer, InvalidCard, InvalidSuitChoice \\
+mustDraw & state: RoundState, playerId: PlayerID & boolean & InvalidRoundState, InvalidPlayer \\
+applyDraw & state: RoundState, playerId: PlayerID & RoundState & EmptyDeck, InvalidRoundState, InvalidPlayer \\
+isRoundOver & state: RoundState & boolean & InvalidRoundState \\
+\bottomrule
+\end{tabular}
 \end{center}
 
 \subsection{Semantics}
 
 \subsubsection{State Variables}
-\begin{itemize}
-    \item Mapping of PlayerID to total scores.
-\end{itemize}
+None. (This module is stateless; all game situation is carried in \texttt{RoundState}.)
 
 \subsubsection{Environment Variables}
-\begin{itemize}
-    \item Game state from Game Engine; base system from Base Conversion Module.
-\end{itemize}
+None.
 
 \subsubsection{Assumptions}
 \begin{itemize}
-    \item Game Engine correctly identifies the end of a round.
+    \item This module currently supports 1v1 gameplay (two players) for round initialization and legality checks.
+    \item \texttt{RoundState} contains: \texttt{hands} (mapping from \texttt{PlayerID} to a sequence of \texttt{Card}), \texttt{drawPile}, \texttt{discardPile}, \texttt{topCard}, \texttt{currentTurn}, and an optional \texttt{forcedSuit}.
+    \item A \textbf{wildcard} is the rank ``10'' and is always playable regardless of suit/rank/sum constraints.
+    \item A \textbf{face card} does not participate in the dozenal-sum rule; it can only be played via match-suit or match-rank (unless it is a wildcard).
+    \item The dozenal-sum rule target is base-12 ``10'' (i.e., decimal 12).
 \end{itemize}
 
 \subsubsection{Access Routine Semantics}
-\noindent\textbf{calculateScore}(\textit{PlayerState})
+
+\noindent\textbf{initRound}(\textit{deck, players})
 \begin{itemize}
-    \item output: computes total score for a player after round ends.
+    \item transition: Validate that \textit{players} contains exactly two distinct players and \textit{deck} has enough cards. Deal \textbf{InitialHandSize} cards from \textit{deck} to each player's hand. Draw one card from the deck to initialize \textit{discardPile} and set \textit{topCard}. Set \textit{forcedSuit} := None. Set \textit{currentTurn} to the starting player (policy-defined).
+    \item output: Return the initialized \texttt{RoundState}.
+    \item exception: \texttt{InvalidPlayers} if \textit{players} is not a valid 1v1 set. \texttt{InvalidDeck} if the deck lacks sufficient cards or is malformed.
 \end{itemize}
 
-\noindent\textbf{updateScores}(\textit{GameState})
+\noindent\textbf{isPlayable}(\textit{state, playerId, card})
 \begin{itemize}
-    \item transition: recalculates and persists the current scoreboard.
-    \item output: \texttt{ScoreList}.
+    \item transition: Validate \textit{state}, \textit{playerId}, and that \textit{card} is in \textit{state.hands[playerId]}. Let \textit{t} := \textit{state.topCard}.
+    \item output: Return \texttt{true} iff the following rule holds:
+    \begin{itemize}
+        \item If \textit{card} is a wildcard (rank 10), then \texttt{true}.
+        \item Else if \textit{state.forcedSuit} $\neq$ None, then \texttt{true} iff \textit{card.suit} equals \textit{state.forcedSuit}.
+        \item Else (no forced suit), \texttt{true} iff at least one is satisfied:
+        \begin{itemize}
+            \item match suit: \textit{card.suit} = \textit{t.suit}
+            \item match rank: \textit{card.rank} = \textit{t.rank}
+            \item dozenal-sum: \textit{card} and \textit{t} are not face cards and \textit{card.rank} + \textit{t.rank} = \textbf{DozenalTargetDecimal}
+        \end{itemize}
+    \end{itemize}
+    \item exception: \texttt{InvalidRoundState} if \textit{state} is malformed. \texttt{InvalidPlayer} if \textit{playerId} is not in the round. \texttt{InvalidCard} if \textit{card} is malformed or not in the player's hand.
 \end{itemize}
 
-\noindent\textbf{getWinner}(\textit{GameState})
+\noindent\textbf{getPlayableCards}(\textit{state, playerId})
 \begin{itemize}
-    \item output: returns the player ID with the highest score.
+    \item transition: Validate \textit{state} and \textit{playerId}. For each \textit{card} in \textit{state.hands[playerId]}, include it in the result iff \textbf{isPlayable}(\textit{state, playerId, card}) is \texttt{true}.
+    \item output: Return the sequence of playable cards (possibly empty).
+    \item exception: \texttt{InvalidRoundState} if \textit{state} is malformed. \texttt{InvalidPlayer} if \textit{playerId} is not in the round.
+\end{itemize}
+
+\noindent\textbf{applyPlay}(\textit{state, playerId, card, chosenSuit})
+\begin{itemize}
+    \item transition: Validate \textit{state} and turn order (must be \textit{playerId}'s turn). Require \textbf{isPlayable}(\textit{state, playerId, card}) = \texttt{true}. Remove \textit{card} from \textit{state.hands[playerId]} and push it onto \textit{state.discardPile}; set \textit{state.topCard} := \textit{card}.
+    \begin{itemize}
+        \item If \textit{card} is a wildcard (rank 10), then \textit{chosenSuit} must be provided; set \textit{state.forcedSuit} := \textit{chosenSuit}.
+        \item Else set \textit{state.forcedSuit} := None.
+    \end{itemize}
+    Advance \textit{state.currentTurn} to the other player.
+    \item output: Return the updated \texttt{RoundState}.
+    \item exception: \texttt{IllegalMove} if the play is not legal under the rules (including playing out of turn). \texttt{InvalidSuitChoice} if \textit{card} is wildcard and \textit{chosenSuit} is missing/invalid. \texttt{InvalidRoundState}/\texttt{InvalidPlayer}/\texttt{InvalidCard} as applicable.
+\end{itemize}
+
+\noindent\textbf{mustDraw}(\textit{state, playerId})
+\begin{itemize}
+    \item transition: Validate \textit{state} and \textit{playerId}. Compute \textit{playables} := \textbf{getPlayableCards}(\textit{state, playerId}).
+    \item output: Return \texttt{true} iff \textit{playables} is empty.
+    \item exception: \texttt{InvalidRoundState} if \textit{state} is malformed. \texttt{InvalidPlayer} if \textit{playerId} is not in the round.
+\end{itemize}
+
+\noindent\textbf{applyDraw}(\textit{state, playerId})
+\begin{itemize}
+    \item transition: Validate \textit{state} and turn order. Require \textbf{mustDraw}(\textit{state, playerId}) = \texttt{true}. Pop the top card from \textit{state.drawPile} and add it to \textit{state.hands[playerId]}. (Whether the drawn card may be played immediately is handled by the caller/game flow policy; this module only applies the draw.)
+    \item output: Return the updated \texttt{RoundState}.
+    \item exception: \texttt{EmptyDeck} if \textit{state.drawPile} is empty. \texttt{InvalidRoundState}/\texttt{InvalidPlayer} as applicable.
+\end{itemize}
+
+\noindent\textbf{isRoundOver}(\textit{state})
+\begin{itemize}
+    \item transition: Validate \textit{state}. Check whether any player's hand is empty.
+    \item output: Return \texttt{true} iff $\exists p$ such that \textit{state.hands[p]} is empty; otherwise \texttt{false}.
+    \item exception: \texttt{InvalidRoundState} if \textit{state} is malformed.
 \end{itemize}
 
 \subsubsection{Local Functions}
-\begin{itemize}
-    \item \texttt{convertScoreToBase(score, base)}: converts numeric score into base-12 if required.
-\end{itemize}
+None.
 
 \subsubsection{Considerations}
 \begin{itemize}
-    \item The scoring algorithm must remain deterministic and verifiable for test reproducibility.
+    \item \textbf{Secret:} exact move-validation criteria, including how matching ranks, suits, dozenal sums, and special cards (wildcard) are handled.
+    \item \textbf{Service:} confirms whether a proposed play is legal and enumerates valid plays for a player based on the current round situation; also provides helpers to initialize a round and apply state transitions for play/draw.
+    \item This module does \textbf{not} compute scoring; scoring is handled by a separate module.
+    \item Dozenal interpretation is delegated to \textbf{M18}; this module uses the decimal target (\textbf{DozenalTargetDecimal}) corresponding to base-12 ``10''.
 \end{itemize}
 
 \newpage
-\section{MIS of Base Conversion Module (M18)}\label{sec:base-conversion-module}
+\section{MIS of Scoring Module (M17)}\label{sec:scoring-module}
 
 \subsection{Module}
-Base Conversion Module
+Scoring
 
 \subsection{Uses}
 \begin{itemize}
-    \item \hyperref[sec:scoring-module]{M17 Scoring Module}
+    \item \hyperref[sec:base-conversion-module]{M18 Base Conversion Module}
 \end{itemize}
 
 \subsection{Syntax}
 
 \subsubsection{Exported Constants}
 \begin{itemize}
-    \item \textbf{DIGITS} = [0–9, A, B]
+    \item \textbf{FaceCardScore}: nat := 10
 \end{itemize}
 
 \subsubsection{Exported Access Programs}
 
 \begin{center}
-    \begin{tabular}{p{4cm} p{3.5cm} p{3cm} p{4cm}}
-        \toprule
-        \textbf{Routine Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
-        \midrule
-        decimalToDozenal & Integer & String & None \\
-        dozenalToDecimal & String & Integer & InvalidFormatException \\
-        \bottomrule
-    \end{tabular}
+\begin{tabular}{p{4.5cm} p{4.5cm} p{3.5cm} p{3.5cm}}
+\toprule
+\textbf{Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
+\midrule
+computeRoundScore & winner: PlayerID, loserHand: seq of Card & string & InvalidHand \\
+\bottomrule
+\end{tabular}
 \end{center}
 
 \subsection{Semantics}
 
 \subsubsection{State Variables}
-\begin{itemize}
-    \item None; stateless conversion utility.
-\end{itemize}
+None.
 
 \subsubsection{Environment Variables}
-\begin{itemize}
-    \item None.
-\end{itemize}
+None.
 
 \subsubsection{Assumptions}
 \begin{itemize}
-    \item Input values are within valid numerical range.
+    \item This module is called only when a round ends (i.e., the winner has emptied their hand).
+    \item The round score equals the sum of the remaining cards in the loser's hand.
+    \item Face cards (J/Q/K) are worth \textbf{FaceCardScore}.
+    \item Rank 10 (including wildcard 10) is worth 10.
+    \item Numeric cards are worth their rank value.
+    \item The returned score is represented in dozenal (base-12) using \textbf{M18.decimalToDozenal}.
 \end{itemize}
 
 \subsubsection{Access Routine Semantics}
-\noindent\textbf{decimalToDozenal}(\textit{Integer})
-\begin{itemize}
-    \item output: converts base-10 integer to base-12 string representation.
-\end{itemize}
 
-\noindent\textbf{dozenalToDecimal}(\textit{String})
+\noindent\textbf{computeRoundScore}(\textit{winner, loserHand})
 \begin{itemize}
-    \item output: parses base-12 string into a base-10 integer.
+    \item transition: Validate \textit{loserHand}. Compute a decimal total:
+    \[
+        total = \sum_{c \in loserHand} scoreValue(c)
+    \]
+    where:
+    \[
+        scoreValue(c) =
+        \begin{cases}
+        \textbf{FaceCardScore} & \text{if } c \text{ is a face card} \\
+        10 & \text{if } rank(c)=10 \\
+        rank(c) & \text{otherwise}
+        \end{cases}
+    \]
+    Convert the decimal \textit{total} to dozenal by calling \textbf{M18.decimalToDozenal}(\textit{total}).
+    \item output: Return the dozenal score string for the round winner.
+    \item exception: \texttt{InvalidHand} if any card in \textit{loserHand} is malformed or has an unsupported rank.
 \end{itemize}
 
 \subsubsection{Local Functions}
-\begin{itemize}
-    \item \texttt{mapDigit(symbol)}: converts symbol to corresponding numeric value.
-\end{itemize}
+None.
 
 \subsubsection{Considerations}
 \begin{itemize}
-    \item Module must handle both positive and zero values accurately; negative numbers optional.
+    \item \textbf{Secret:} the scoring equation that converts remaining cards into round points.
+    \item \textbf{Service:} calculates the round score at the end of a round and returns it in dozenal form for display.
 \end{itemize}
+
+
+\newpage
+\section{MIS of Base Conversion Module (M18)}\label{sec:base-conversion-module}
+
+\subsection{Module}
+Base Conversion
+
+\subsection{Uses}
+None.
+
+\subsection{Syntax}
+
+\subsubsection{Exported Constants}
+\begin{itemize}
+    \item \textbf{DozenalBase}: nat := 12
+    \item \textbf{DecimalBase}: nat := 10
+\end{itemize}
+
+\subsubsection{Exported Access Programs}
+
+\begin{center}
+\begin{tabular}{p{4.5cm} p{4.5cm} p{3.5cm} p{3.5cm}}
+\toprule
+\textbf{Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
+\midrule
+decimalToDozenal & n: int & string & InvalidNumberFormat \\
+dozenalToDecimal & s: string & int & InvalidNumberFormat \\
+normalizeDozenal & s: string & string & InvalidNumberFormat \\
+isValidDozenal & s: string & boolean & None \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Semantics}
+
+\subsubsection{State Variables}
+None.
+
+\subsubsection{Environment Variables}
+None.
+
+\subsubsection{Assumptions}
+\begin{itemize}
+    \item The dozenal representation uses a fixed, consistent mapping between values and symbols for digits (including the two extra digits beyond 0--9).
+    \item Input strings for conversion do not contain whitespace unless explicitly handled by \texttt{normalizeDozenal}.
+\end{itemize}
+
+\subsubsection{Access Routine Semantics}
+
+\noindent\textbf{decimalToDozenal}(\textit{n})
+\begin{itemize}
+    \item transition: Convert integer \textit{n} from base \textbf{DecimalBase} to base \textbf{DozenalBase} using repeated division and remainder; map each remainder to the corresponding dozenal digit symbol; produce the resulting string (including a sign if \textit{n} $<$ 0).
+    \item output: Return a dozenal \texttt{string} representing \textit{n}.
+    \item exception: \texttt{InvalidNumberFormat} if \textit{n} is not a valid finite integer (implementation-defined; e.g., NaN or non-integer input in a loosely-typed context).
+\end{itemize}
+
+\noindent\textbf{dozenalToDecimal}(\textit{s})
+\begin{itemize}
+    \item transition: Normalize \textit{s} (optional). Validate that every character is a recognized dozenal digit symbol (and optional leading sign). Compute the decimal value by positional evaluation in base \textbf{DozenalBase}.
+    \item output: Return the decimal \texttt{int} value represented by \textit{s}.
+    \item exception: \texttt{InvalidNumberFormat} if \textit{s} contains invalid digits/symbols or is otherwise malformed.
+\end{itemize}
+
+\noindent\textbf{normalizeDozenal}(\textit{s})
+\begin{itemize}
+    \item transition: Standardize \textit{s} into canonical dozenal format (e.g., trim whitespace, normalize casing, map alternate symbols to the project-standard digit symbols).
+    \item output: Return the normalized dozenal \texttt{string}.
+    \item exception: \texttt{InvalidNumberFormat} if \textit{s} cannot be normalized into a valid dozenal representation.
+\end{itemize}
+
+\noindent\textbf{isValidDozenal}(\textit{s})
+\begin{itemize}
+    \item transition: Check whether \textit{s} is a syntactically valid dozenal string under the module's digit-symbol mapping.
+    \item output: Return \texttt{true} iff \textit{s} is valid; otherwise return \texttt{false}.
+    \item exception: None.
+\end{itemize}
+
+\subsubsection{Local Functions}
+None.
+
+\subsubsection{Considerations}
+\begin{itemize}
+    \item \textbf{Secret:} the mapping of digits and symbols used to move between decimal and dozenal numbers.
+    \item \textbf{Service:} translates numeric values to and from dozenal form for scoring logic and UI presentation.
+    \item This is a behaviour-hiding utility module: callers rely on the conversion API without knowing the digit-symbol mapping details.
+\end{itemize}
+
 
 \newpage
 \section{MIS of Game Actions Module (M19)}\label{sec:game-actions-module}
