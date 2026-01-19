@@ -59,6 +59,8 @@ Nov 13th & Rev-1 & Fix consistency\\
 Nov 13th & Rev-1 & Fix correlation\\
 Nov 13th & Rev-1 & Fix consistency\\
 Jan 14th & Rev0 & Remove module 20,21,22\\ 
+Jan 17th & Rev0 & update m1,4,5,6,9,13,16,17,18\\
+Jan 18th & Rev0 & update the remaining part\\
 \bottomrule
 \end{tabularx}
 
@@ -874,7 +876,7 @@ None.
     \item If storage targets or retention strategies change, updates are localized to this module; event producers remain unchanged as long as the API is stable.
 \end{itemize}
 
-\\newpage
+\newpage
 \section{MIS of Real-time Client Module (M7)}\label{sec:realtime-client-module}
 
 \subsection{Module}
@@ -2136,9 +2138,7 @@ None.
 
 \subsubsection{Exported Access Programs}
 \begin{center}
-    %
-    % 我保留了你组员的 booktabs (\toprule) 样式，它很好
-    %
+
     \begin{tabular}{p{3.5cm} p{3.5cm} p{3cm} >{\raggedright\arraybackslash}p{4cm}}
         \toprule
         \textbf{Routine Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
@@ -2203,230 +2203,6 @@ None.
     \item This module improves maintainability by isolating gameplay logic into self-contained actions, enabling undo/redo and deterministic testing.
 \end{itemize}
 
-\newpage
-\section{MIS of Operating System Module (M20)}\label{sec:os-module}
-
-\subsection{Module}
-Operating System Module
-
-\subsection{Uses}
-None.
-
-\subsection{Syntax}
-
-\subsubsection{Exported Constants}
-None.
-
-\subsubsection{Exported Access Programs}
-\begin{center}
-    \begin{tabular}{p{4cm} p{3.5cm} p{3cm} p{3cm}}
-        \toprule
-        \textbf{Routine Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
-        \midrule
-        scheduleTask & Function, Delay & None & None \\
-        readFile & Path & String & IOError \\
-        writeFile & Path, String & None & IOError \\
-        \bottomrule
-    \end{tabular}
-\end{center}
-
-\subsection{Semantics}
-
-\subsubsection{State Variables}
-\begin{itemize}
-    \item System scheduler queue.
-\end{itemize}
-
-\subsubsection{Environment Variables}
-\begin{itemize}
-    \item Host OS file system and process manager.
-\end{itemize}
-
-\subsubsection{Assumptions}
-\begin{itemize}
-    \item OS provides basic thread safety and asynchronous task execution.
-\end{itemize}
-
-\subsubsection{Access Routine Semantics}
-\noindent\textbf{scheduleTask}(\textit{Function, Delay})
-\begin{itemize}
-    \item transition: executes a callback after a specified delay.
-    \item output: \texttt{None}.
-\end{itemize}
-
-\noindent\textbf{readFile}(\textit{Path})
-\begin{itemize}
-    \item output: retrieves content from a local file path.
-\end{itemize}
-
-\noindent\textbf{writeFile}(\textit{Path, String})
-\begin{itemize}
-    \item transition: writes content to a file.
-    \item output: \texttt{None}.
-\end{itemize}
-
-\subsubsection{Local Functions}
-\begin{itemize}
-    \item \texttt{validatePath(path)}: checks file system accessibility.
-\end{itemize}
-
-\subsubsection{Considerations}
-\begin{itemize}
-    \item This module ensures portability across Windows, macOS, and Linux.
-\end{itemize}
-
-\newpage
-\section{MIS of Browser Runtime Module (M21)}\label{sec:browser-runtime-module}
-
-\subsection{Module}
-Browser Runtime Module
-
-\subsection{Uses}
-None.
-
-\subsection{Syntax}
-
-\subsubsection{Exported Constants}
-None.
-
-\subsubsection{Exported Access Programs}
-\begin{center}
-    \begin{tabular}{p{4cm} p{3.5cm} p{3cm} p{4cm}}
-        \toprule
-        \textbf{Routine Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
-        \midrule
-        registerEvent & String, Callback & None & None \\
-        renderElement & HTMLElement & None & None \\
-        storeLocalData & Key, Value & None & StorageException \\
-        \bottomrule
-    \end{tabular}
-\end{center}
-
-\subsection{Semantics}
-
-\subsubsection{State Variables}
-\begin{itemize}
-    \item Local storage cache, active event listeners.
-\end{itemize}
-
-\subsubsection{Environment Variables}
-\begin{itemize}
-    \item Browser environment (HTML5, Web APIs).
-\end{itemize}
-
-\subsubsection{Assumptions}
-\begin{itemize}
-    \item All browser APIs are available in the execution environment.
-\end{itemize}
-
-\subsubsection{Access Routine Semantics}
-\noindent\textbf{registerEvent}(\textit{String, Callback})
-\begin{itemize}
-    \item transition: binds a function to a specified DOM event.
-    \item output: \texttt{None}.
-\end{itemize}
-
-\noindent\textbf{renderElement}(\textit{HTMLElement})
-\begin{itemize}
-    \item transition: draws a UI element on the screen.
-    \item output: \texttt{None}.
-\end{itemize}
-
-\noindent\textbf{storeLocalData}(\textit{Key, Value})
-\begin{itemize}
-    \item transition: writes data into browser storage for persistence.
-    \item output: \texttt{None}.
-\end{itemize}
-
-\subsubsection{Local Functions}
-\begin{itemize}
-    \item \texttt{serialize(obj)}: converts objects into storable string format.
-\end{itemize}
-
-\subsubsection{Considerations}
-\begin{itemize}
-    \item Must be compatible with modern browsers and responsive frameworks.
-\end{itemize}
-
-\newpage
-\section{MIS of Database Module (M22)}\label{sec:database-module}
-
-\subsection{Module}
-Database Module
-
-\subsection{Uses}
-None.
-
-\subsection{Syntax}
-
-\subsubsection{Exported Constants}
-None.
-
-\subsubsection{Exported Access Programs}
-\begin{center}
-    \begin{tabular}{p{4cm} p{3.5cm} p{3cm} p{4.5cm}}
-        \toprule
-        \textbf{Routine Name} & \textbf{In} & \textbf{Out} & \textbf{Exceptions} \\
-        \midrule
-        connect & ConnectionString & Boolean & DatabaseConnectionError \\
-        query & SQLStatement & ResultSet & QueryError \\
-        insertRecord & Table, Data & Boolean & InsertError \\
-        updateRecord & Table, Data & Boolean & UpdateError \\
-        \bottomrule
-    \end{tabular}
-\end{center}
-
-\subsection{Semantics}
-
-\subsubsection{State Variables}
-\begin{itemize}
-    \item \textbf{dbConnection}: current active database session.
-    \item \textbf{cache}: optional in-memory data cache.
-\end{itemize}
-
-\subsubsection{Environment Variables}
-\begin{itemize}
-    \item Database server or local SQLite environment.
-\end{itemize}
-
-\subsubsection{Assumptions}
-\begin{itemize}
-    \item Database connection string is valid and accessible.
-\end{itemize}
-
-\subsubsection{Access Routine Semantics}
-\noindent\textbf{connect}(\textit{ConnectionString})
-\begin{itemize}
-    \item transition: establishes a session with the database server.
-    \item output: \texttt{Boolean}.
-\end{itemize}
-
-\noindent\textbf{query}(\textit{SQLStatement})
-\begin{itemize}
-    \item output: executes read operations and returns result sets.
-\end{itemize}
-
-\noindent\textbf{insertRecord}(\textit{Table, Data})
-\begin{itemize}
-    \item transition: inserts a new entry into the specified table.
-    \item output: \texttt{Boolean}.
-\end{itemize}
-
-\noindent\textbf{updateRecord}(\textit{Table, Data})
-\begin{itemize}
-    \item transition: modifies existing records based on key values.
-    \item output: \texttt{Boolean}.
-\end{itemize}
-
-\subsubsection{Local Functions}
-\begin{itemize}
-    \item \texttt{sanitizeInput()}: prevents SQL injection attacks.
-\end{itemize}
-
-\subsubsection{Considerations}
-\begin{itemize}
-    \item Database operations must remain atomic and logged to ensure integrity and traceability.
-\end{itemize}
 
 
 %~\newpage
