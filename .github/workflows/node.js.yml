@@ -5,12 +5,12 @@ on:
   push:
     branches: ["Rev0"]
     paths:
-      - "src/Rev0/**"
+      - "src/rev0/**"
       - ".github/workflows/**"
   pull_request:
     branches: ["Rev0"]
     paths:
-      - "src/Rev0/**"
+      - "src/rev0/**"
       - ".github/workflows/**"
 
 jobs:
@@ -20,11 +20,11 @@ jobs:
     strategy:
       matrix:
         node-version: [20.x]     # keep CI faster; add 18.x/22.x later if you want
-        app: [frontend, backend] # assumes src/Rev0/frontend and src/Rev0/backend
+        app: [frontend, backend] # assumes src/rev0/frontend and src/rev0/backend
 
     defaults:
       run:
-        working-directory: src/Rev0/${{ matrix.app }}
+        working-directory: src/rev0/${{ matrix.app }}
 
     steps:
       - uses: actions/checkout@v4
@@ -34,7 +34,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: npm
-          cache-dependency-path: src/Rev0/${{ matrix.app }}/package-lock.json
+          cache-dependency-path: src/rev0/${{ matrix.app }}/package-lock.json
 
       - name: Install
         run: npm ci
