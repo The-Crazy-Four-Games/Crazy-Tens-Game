@@ -8,7 +8,7 @@
 Verify Node and npm are available:
 
 ## 2) Clone the Repository
-    ```bash
+```bash
 git clone <REPO_URL>
 cd Crazy-Tens-Game
 ```
@@ -18,12 +18,14 @@ cd Crazy-Tens-Game
 Dependencies are installed separately for frontend and backend.
 
 3.1 Frontend (React + Vite + TypeScript)
+```bash
 cd frontend
 npm install
-
+```
 3.2 Backend (Node + TypeScript + Socket.IO / Express)
 
 Open a new terminal (recommended), then:
-
+```bash
 cd backend
 npm install
+```
