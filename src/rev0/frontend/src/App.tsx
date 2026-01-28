@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 
 const API = "http://localhost:3001/api/v1";
