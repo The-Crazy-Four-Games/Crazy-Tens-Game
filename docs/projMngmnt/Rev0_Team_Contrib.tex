@@ -24,7 +24,51 @@ Demo.  The time period of interest is the time between the PoC demo and the Rev
 
 \section{Demo Plans}
 
-\wss{What will you be demonstrating}
+\subsection*{Overview}
+The Rev 0 demo will be performed in-person and run locally from a group member's laptop. The goal is to demonstrate a complete two-player game flow with authentication, lobby management, and real-time gameplay via WebSocket communication.
+
+\subsection*{Setup}
+\begin{itemize}
+    \item Start the backend server (\texttt{Node.js} with Express and Socket.IO) on the presenter's machine.
+    \item Start the frontend development server (\texttt{Vite + React}) on the presenter's machine.
+    \item Open the game in two separate browser windows (one normal, one incognito) to simulate two players.
+\end{itemize}
+
+\subsection*{Demo Flow (approx. 8--10 minutes)}
+\begin{enumerate}
+    \item Brief introduction of demo objectives and improvements since POC (30s).
+    \item Demonstrate user authentication:
+        \begin{itemize}
+            \item Register/login for Player 1 in the normal browser window.
+            \item Register/login for Player 2 in the incognito window.
+        \end{itemize}
+    \item Demonstrate lobby system:
+        \begin{itemize}
+            \item Player 1 creates a lobby and copies the lobby ID.
+            \item Player 2 joins the lobby using the shared lobby ID.
+            \item Player 1 selects numeral system (Dozenal/Decimal) and starts the match.
+        \end{itemize}
+    \item Show automatic transition from Lobby screen to Game screen for both players.
+    \item Demonstrate real-time gameplay with the new UI:
+        \begin{itemize}
+            \item Show opponent's face-down hand and card count.
+            \item Playing cards from visible hand with playability highlighting.
+            \item Demonstrate wildcard (10) with suit picker modal and golden card styling.
+            \item Demonstrate skip card (6) granting free play with blue card styling.
+            \item Drawing cards when no valid plays are available.
+            \item Show real-time score updates and turn indicators.
+        \end{itemize}
+    \item Demonstrate the Decimal/Dozenal display toggle in the game header.
+    \item Drive the game toward an endgame state and show round/game completion.
+    \item Conclude with current limitations and planned improvements for Rev 1, then take questions.
+\end{enumerate}
+
+\subsection*{Notes}
+\begin{itemize}
+    \item Authentication is now functional with JWT tokens stored in localStorage.
+    \item WebSocket handles real-time game state synchronization between players.
+    \item Will mention current limitations (local deployment only, basic error handling) and planned next steps (deployment, improved UI/UX, additional game modes).
+\end{itemize}
 
 \section{Team Meeting Attendance}
 
