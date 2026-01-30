@@ -24,43 +24,77 @@ Demo.  The time period of interest is the time between the PoC demo and the Rev
 
 \section{Demo Plans}
 
-\wss{What will you be demonstrating}
+\subsection*{Overview}
+The Rev 0 demo will be performed in-person and run locally from a group member's laptop. The goal is to demonstrate a complete two-player game flow with authentication, lobby management, and real-time gameplay via WebSocket communication.
+
+\subsection*{Setup}
+\begin{itemize}
+    \item Start the backend server (\texttt{Node.js} with Express and Socket.IO) on the presenter's machine.
+    \item Start the frontend development server (\texttt{Vite + React}) on the presenter's machine.
+    \item Open the game in two separate browser windows (one normal, one incognito) to simulate two players.
+\end{itemize}
+
+\subsection*{Demo Flow (approx. 8--10 minutes)}
+\begin{enumerate}
+    \item Brief introduction of demo objectives and improvements since POC (30s).
+    \item Demonstrate user authentication:
+        \begin{itemize}
+            \item Register/login for Player 1 in the normal browser window.
+            \item Register/login for Player 2 in the incognito window.
+        \end{itemize}
+    \item Demonstrate lobby system:
+        \begin{itemize}
+            \item Player 1 creates a lobby and copies the lobby ID.
+            \item Player 2 joins the lobby using the shared lobby ID.
+            \item Player 1 selects numeral system (Dozenal/Decimal) and starts the match.
+        \end{itemize}
+    \item Show automatic transition from Lobby screen to Game screen for both players.
+    \item Demonstrate real-time gameplay with the new UI:
+        \begin{itemize}
+            \item Show opponent's face-down hand and card count.
+            \item Playing cards from visible hand with playability highlighting.
+            \item Demonstrate wildcard (10) with suit picker modal and golden card styling.
+            \item Demonstrate skip card (6) granting free play with blue card styling.
+            \item Drawing cards when no valid plays are available.
+            \item Show real-time score updates and turn indicators.
+        \end{itemize}
+    \item Demonstrate the Decimal/Dozenal display toggle in the game header.
+    \item Drive the game toward an endgame state and show round/game completion.
+    \item Conclude with current limitations and planned improvements for Rev 1, then take questions.
+\end{enumerate}
+
+\subsection*{Notes}
+\begin{itemize}
+    \item Authentication is now functional with JWT tokens stored in localStorage.
+    \item WebSocket handles real-time game state synchronization between players.
+    \item Will mention current limitations (local deployment only, basic error handling) and planned next steps (deployment, improved UI/UX, additional game modes).
+\end{itemize}
 
 \section{Team Meeting Attendance}
 
-\wss{For each team member how many team meetings have they attended over the
-time period of interest.  This number should be determined from the meeting
-issues in the team's repo.  The first entry in the table should be the total
-number of team meetings held by the team.}
-
 \begin{table}[H]
 \centering
 \begin{tabular}{ll}
 \toprule
 \textbf{Student} & \textbf{Meetings}\\
 \midrule
-Total & Num\\
-Name 1 & Num\\
-Name 2 & Num\\
-Name 3 & Num\\
-Name 4 & Num\\
-Name 5 & Num\\
+Total & 2 \\
+Ruida Chen & 2 \\
+Jiaming Li & 2 \\
+Alvin Qian & 2 \\
+Ammar Sharbat & 2 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\wss{If needed, an explanation for the counts can be provided here.}
+Explanation: \\\\
+We don't meet that often as a team, rather we use Discord for communication generally, which is very hard to trace.\\\\
+All team meetings we have had to date have been added our Github Repo. Here is our meeting \href{https://github.com/The-Crazy-Four-Games/Crazy-Tens-Game/issues/213}{last November}, and \href{https://github.com/The-Crazy-Four-Games/Crazy-Tens-Game/issues/163}{this January}.\\
 
 \section{Supervisor/Stakeholder Meeting Attendance}
 
-\wss{For each team member how many supervisor/stakeholder team meetings have
-they attended over the time period of interest.  This number should be determined
-from the supervisor meeting issues in the team's repo.  The first entry in the
-table should be the total number of supervisor and team meetings held by the
-team.  If there is no supervisor, there will usually be meetings with
-stakeholders (potential users) that can serve a similar purpose.}
 
-\noindent \textbf{Supervisor's Name: } [fill in this information]
+\noindent \textbf{Supervisor's Name: } Paul Rapoport; Email: rapoport@mcmaster.ca
 
 \begin{table}[H]
 \centering
@@ -68,28 +102,21 @@ stakeholders (potential users) that can serve a similar purpose.}
 \toprule
 \textbf{Student} & \textbf{Meetings}\\
 \midrule
-Total & Num\\
-Name 1 & Num\\
-Name 2 & Num\\
-Name 3 & Num\\
-Name 4 & Num\\
-Name 5 & Num\\
+Total & 2 \\
+Ruida Chen & 2 \\
+Jiaming Li & 1 \\
+Alvin Qian & 2 \\
+Ammar Sharbat & 2 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \wss{If needed, an explanation for the counts can be provided here.}
 
-\section{Lecture Attendance}
+\section{Lecture + Tutorial Attendance\\    OR  \\Lectures + Tutorials Read}
 
-\wss{For each team member how many lectures have they attended over the time
-period of interest.  This number should be determined from the lecture issues in
-the team's repo. You can find the number of lectures in the time period of
-interest by looking at the
-\href{https://calendar.google.com/calendar/u/0/embed?src=rnboqiaki1k2la7rpu3bn0um58@group.calendar.google.com&ctz=America/Toronto}
-{Google calendar} for the capstone course.}
-
-\wss{NOTE: There will be approximately 1 lecture between the POC and Rev0 demos}
+Except for teammate Ammar, all 3 members did not attent the majority of lectures, but they did read several of them as they were needed for project work.
+As long as you read the lecture, your attendance will be counted in the total.
 
 \begin{table}[H]
 \centering
@@ -97,24 +124,38 @@ interest by looking at the
 \toprule
 \textbf{Student} & \textbf{Lectures}\\
 \midrule
-Total & Num\\
-Name 1 & Num\\
-Name 2 & Num\\
-Name 3 & Num\\
-Name 4 & Num\\
-Name 5 & Num\\
+Total & 1 \\
+Ruida Chen & 1 \\
+Jiaming Li & 0 \\
+Alvin Qian & 0 \\
+Ammar Sharbat & 1 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\wss{If needed, an explanation for the lecture attendance can be provided here.}
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Student} & \textbf{Tutorials}\\
+\midrule
+Total & 1 \\
+Ruida Chen & 0 \\
+Jiaming Li & 0 \\
+Alvin Qian & 0 \\
+Ammar Sharbat & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Explanation:\\\\
+Note: Both tallies are not entirely accurate, because outside of Teammate Ammar and Teammate Ruida (for some), teammates have not checkmarked their attendance/reading of classes, so the number listed is are just based on teammate Ammar's best estimates of the project group's "attendance".\\
+An issue exists in our \href{https://github.com/The-Crazy-Four-Games/Crazy-Tens-Game/issues?q=lecture\%20-}{GitHub Repository} for every lecture and tutorial class for the course.\\
+This Team Contribution Report is only concerned our attendance of the \href{https://github.com/The-Crazy-Four-Games/Crazy-Tens-Game/issues/169}{lecture} and \href{https://github.com/The-Crazy-Four-Games/Crazy-Tens-Game/issues/231}{tutorial} this January, as these were the only classes since the POC Demo last November.
 
 \section{TA Document Discussion Attendance}
 
-\wss{For each team member how many of the informal document discussion meetings
-with the TA were attended over the time period of interest.}
-
-\noindent \textbf{TA's Name: } [fill in this information]
+\noindent \textbf{TA's Name: } [Chris Schankula]
 
 \begin{table}[H]
 \centering
@@ -122,24 +163,23 @@ with the TA were attended over the time period of interest.}
 \toprule
 \textbf{Student} & \textbf{Lectures}\\
 \midrule
-Total & Num\\
-Name 1 & Num\\
-Name 2 & Num\\
-Name 3 & Num\\
-Name 4 & Num\\
-Name 5 & Num\\
+Total & 0\\
+Ruida Chen & 0 \\
+Jiaming Li & 0 \\
+Alvin Qian & 0 \\
+Ammar Sharbat & 0 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\wss{If needed, an explanation for the attendance can be provided here.}
+Explanation:\\\\
+Our project team (Team 25) had a TA switch after the first document discussion (PS+Goals \& DevPlan), from TA Rashad Bhuiyan to TA Chris Schankula.\\
+TA Chris has been very helpful for our Team, though he was not available to meet for the most recent Document Discussion on DesDoc\_Rev0 despite Teammate Ammar reaching out on the week of January 12--16 2026.\\
+Otherwise, our team has attended all other TA document discussions, and TA Chris has been very helpful and provided great feedback on our deliverables.
 
 \section{Commits}
 
-\wss{For each team member how many commits to the main branch have been made
-over the time period of interest.  The total is the total number of commits for
-the entire team since the beginning of the term.  The percentage is the
-percentage of the total commits made by each team member.}
+Time Period : January - now
 
 \begin{table}[H]
 \centering
@@ -147,26 +187,22 @@ percentage of the total commits made by each team member.}
 \toprule
 \textbf{Student} & \textbf{Commits} & \textbf{Percent}\\
 \midrule
-Total & Num & 100\% \\
-Name 1 & Num & \% \\
-Name 2 & Num & \% \\
-Name 3 & Num & \% \\
-Name 4 & Num & \% \\
-Name 5 & Num & \% \\
+Total & 21 & 100\% \\
+Ruida Chen & 11 & 52.4\% \\
+Jiaming Li & 2 & 9.5\% \\
+Alvin Qian & 4 & 19.0\% \\
+Ammar Sharbata & 4 & 19.0\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\wss{If needed, an explanation for the counts can be provided here.  For
-instance, if a team member has more commits to unmerged branches, these numbers
-can be provided here.  If multiple people contribute to a commit, git allows for
-multi-author commits.}
+Different teammates use different commit styles—some prefer batching changes into a few large commits after completing a section, while others commit incrementally. As a result, the number of commits does not necessarily correspond directly to workload or contribution size.
 
 \section{Issue Tracker}
 
-\wss{For each team member how many issues have they authored (including open and
-closed issues (O+C)) and how many have they been assigned (only counting closed
-issues (C only)) over the time period of interest.}
+Time Period : January - now
+
+
 
 \begin{table}[H]
 \centering
@@ -174,32 +210,51 @@ issues (C only)) over the time period of interest.}
 \toprule
 \textbf{Student} & \textbf{Authored (O+C)} & \textbf{Assigned (C only)}\\
 \midrule
-Name 1 & Num & Num \\
-Name 2 & Num & Num \\
-Name 3 & Num & Num \\
-Name 4 & Num & Num \\
-Name 5 & Num & Num \\
+Ruida Chen & 13 & 12 \\
+Jiaming Li & 9 &  14\\
+Alvin Qian & 16 &  17\\
+Ammar Sharbata & 13 & 2  \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\wss{If needed, an explanation for the counts can be provided here.}
+Some issues were created long ago (e.g., from earlier lectures/meetings) but were only closed recently because they were left open unintentionally. These late-closed legacy issues do not reflect current work for this reporting period and are therefore excluded from the issue count.
+
 
 \section{CICD}
 
-\wss{Say how CICD is used in your project}
+The project repository is hosted on GitHub and uses GitHub Actions for Continuous Integration and Continuous Deployment (CICD).
+Each push or pull request triggers an automated workflow that performs the following tasks:
+
+\begin{itemize}
+    \item \textbf{Build and Lint:} The workflow installs all dependencies, compiles the code, and runs ESLint to enforce consistent formatting and syntax.
+    \item \textbf{Unit Testing:} All Jest test suites are executed automatically. Code coverage reports are uploaded to Codecov.
+    \item \textbf{Static Analysis:} CodeQL is run to detect potential vulnerabilities and logic errors.
+    \item \textbf{Artifact Packaging:} For successful builds, the workflow produces a testable web or desktop artifact for internal review.
+\end{itemize}
+
+This setup ensures that any code merged into the \texttt{main} branch has passed validation for correctness, maintainability, and security.
+By automating these checks, CICD reduces integration errors and accelerates the development feedback cycle.
 
 \section{Team Charter Trigger Items}
 
-\wss{Provide a summary of the quantified triggers identified in the team's
-charter.}
+The team has identified several triggers within the team charter to monitor collaboration and performance consistency:
 
-\wss{Provide a list of any violations of the triggers.  If the team wishes, the
-violations can be summarized on aggregate, instead of naming specific team
-members.}
+\begin{itemize}
+    \item \textbf{Commit Frequency:} Each member should contribute at least one meaningful commit per week.
+    Falling below this threshold for two consecutive weeks triggers a discussion about workload balance.
+    \item \textbf{Meeting Attendance:} Missing two consecutive team meetings without prior notice triggers a check-in with the member to identify scheduling or communication issues.
+    \item \textbf{Branch Discipline:} All code changes must go through a pull request reviewed by at least one teammate.
+    Direct commits to \texttt{main} are not allowed and will trigger an immediate process review.
+    \item \textbf{Responsiveness:} Team members are expected to reply to key project communications (e.g., PR reviews or Slack updates) within 24 hours.
+    Failure to respond repeatedly triggers a group discussion for reassigning responsibilities.
+\end{itemize}
 
-\wss{Provide a plan to address the violations.  This could include revising the
-triggers, if they are found to be too weak, strong or ambiguous.}
+So far, no major trigger violations have occurred. The team has maintained consistent communication and review discipline.
+If violations are observed in the future, the plan is to (1) hold a brief retrospective discussion,
+(2) revise or clarify the trigger threshold if needed, and (3) document the agreed corrective action in the next meeting notes.
+
+
 
 \section{Additional Productivity Metrics}
 
