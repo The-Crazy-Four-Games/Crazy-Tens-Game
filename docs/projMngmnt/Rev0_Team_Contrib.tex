@@ -93,14 +93,8 @@ All team meetings we have had to date have been added our Github Repo. Here is o
 
 \section{Supervisor/Stakeholder Meeting Attendance}
 
-\wss{For each team member how many supervisor/stakeholder team meetings have
-they attended over the time period of interest.  This number should be determined
-from the supervisor meeting issues in the team's repo.  The first entry in the
-table should be the total number of supervisor and team meetings held by the
-team.  If there is no supervisor, there will usually be meetings with
-stakeholders (potential users) that can serve a similar purpose.}
 
-\noindent \textbf{Supervisor's Name: } [fill in this information]
+\noindent \textbf{Supervisor's Name: } Paul Rapoport; Email: rapoport@mcmaster.ca
 
 \begin{table}[H]
 \centering
@@ -108,12 +102,11 @@ stakeholders (potential users) that can serve a similar purpose.}
 \toprule
 \textbf{Student} & \textbf{Meetings}\\
 \midrule
-Total & Num\\
-Name 1 & Num\\
-Name 2 & Num\\
-Name 3 & Num\\
-Name 4 & Num\\
-Name 5 & Num\\
+Total & 2 \\
+Ruida Chen & 2 \\
+Jiaming Li & 1 \\
+Alvin Qian & 2 \\
+Ammar Sharbat & 2 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -230,19 +223,38 @@ Some issues were created long ago (e.g., from earlier lectures/meetings) but wer
 
 \section{CICD}
 
-\wss{Say how CICD is used in your project}
+The project repository is hosted on GitHub and uses GitHub Actions for Continuous Integration and Continuous Deployment (CICD).
+Each push or pull request triggers an automated workflow that performs the following tasks:
+
+\begin{itemize}
+    \item \textbf{Build and Lint:} The workflow installs all dependencies, compiles the code, and runs ESLint to enforce consistent formatting and syntax.
+    \item \textbf{Unit Testing:} All Jest test suites are executed automatically. Code coverage reports are uploaded to Codecov.
+    \item \textbf{Static Analysis:} CodeQL is run to detect potential vulnerabilities and logic errors.
+    \item \textbf{Artifact Packaging:} For successful builds, the workflow produces a testable web or desktop artifact for internal review.
+\end{itemize}
+
+This setup ensures that any code merged into the \texttt{main} branch has passed validation for correctness, maintainability, and security.
+By automating these checks, CICD reduces integration errors and accelerates the development feedback cycle.
 
 \section{Team Charter Trigger Items}
 
-\wss{Provide a summary of the quantified triggers identified in the team's
-charter.}
+The team has identified several triggers within the team charter to monitor collaboration and performance consistency:
 
-\wss{Provide a list of any violations of the triggers.  If the team wishes, the
-violations can be summarized on aggregate, instead of naming specific team
-members.}
+\begin{itemize}
+    \item \textbf{Commit Frequency:} Each member should contribute at least one meaningful commit per week.
+    Falling below this threshold for two consecutive weeks triggers a discussion about workload balance.
+    \item \textbf{Meeting Attendance:} Missing two consecutive team meetings without prior notice triggers a check-in with the member to identify scheduling or communication issues.
+    \item \textbf{Branch Discipline:} All code changes must go through a pull request reviewed by at least one teammate.
+    Direct commits to \texttt{main} are not allowed and will trigger an immediate process review.
+    \item \textbf{Responsiveness:} Team members are expected to reply to key project communications (e.g., PR reviews or Slack updates) within 24 hours.
+    Failure to respond repeatedly triggers a group discussion for reassigning responsibilities.
+\end{itemize}
 
-\wss{Provide a plan to address the violations.  This could include revising the
-triggers, if they are found to be too weak, strong or ambiguous.}
+So far, no major trigger violations have occurred. The team has maintained consistent communication and review discipline.
+If violations are observed in the future, the plan is to (1) hold a brief retrospective discussion,
+(2) revise or clarify the trigger threshold if needed, and (3) document the agreed corrective action in the next meeting notes.
+
+
 
 \section{Additional Productivity Metrics}
 
