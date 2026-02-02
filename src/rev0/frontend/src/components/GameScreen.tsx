@@ -35,9 +35,8 @@ interface GameScreenProps {
   // Back button
   onBackToLobby: () => void;
 
-  // Numeral system
-  displayBase: 'doz' | 'dec';
-  onToggleBase: () => void;
+  // Restart game
+  onPlayAgain: () => void;
 }
 
 export const GameScreen: React.FC<GameScreenProps> = ({
@@ -50,8 +49,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   onPass,
   onPlay,
   onBackToLobby,
-  displayBase,
-  onToggleBase,
+  onPlayAgain,
 }) => {
   const [selectedCard, setSelectedCard] = useState<CardType | null>(null);
   const [showSuitPicker, setShowSuitPicker] = useState(false);
@@ -70,8 +68,9 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   // Helper to check if card is wildcard (rank "10")
   const isWildcard = (rank: string) => rank === '10';
 
-  // Helper to check if card is skip card (rank "6")
-  const isSkipCard = (rank: string) => rank === '6';
+  // Helper to check if card is skip card (rank "6" for dozenal, "5" for decimal)
+  const skipRank = ps.baseId === 'doz' ? '6' : '5';
+  const isSkipCard = (rank: string) => rank === skipRank;
 
   // Playable cards hint (client-side weak check)
   const playableCards = useMemo(() => {
@@ -91,13 +90,6 @@ export const GameScreen: React.FC<GameScreenProps> = ({
 
   const isSelected = (card: CardType) =>
     selectedCard && selectedCard.suit === card.suit && selectedCard.rank === card.rank;
-
-  // Format rank for display based on current display base
-  const formatRank = (rank: string): string => {
-    if (rank === '↊') return displayBase === 'doz' ? '↊' : 'A';
-    if (rank === '↋') return displayBase === 'doz' ? '↋' : 'B';
-    return rank;
-  };
 
   const handleCardClick = (card: CardType) => {
     if (!myTurn) return;
@@ -146,11 +138,8 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           ← Back
         </button>
         <h1>Crazy Tens</h1>
-        <div className="base-toggle">
-          <span>Display:</span>
-          <button onClick={onToggleBase} className="toggle-btn">
-            {displayBase === 'doz' ? 'Dozenal' : 'Decimal'}
-          </button>
+        <div className="game-base-info">
+          Base: {ps.baseId === 'doz' ? 'Dozenal' : 'Decimal'}
         </div>
       </header>
 
@@ -176,7 +165,10 @@ export const GameScreen: React.FC<GameScreenProps> = ({
       {/* Game Status */}
       {ps.status === 'GAME_OVER' && (
         <div className="game-over-banner">
-          🎉 Game Over! Check scores above.
+          <div>🎉 Game Over! Check scores above.</div>
+          <button className="play-again-btn" onClick={onPlayAgain}>
+            Play Again
+          </button>
         </div>
       )}
 
@@ -260,7 +252,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           <span className="hint-label">Playable:</span>
           <span className="hint-cards">
             {playableCards.length > 0
-              ? playableCards.map((c) => `${formatRank(c.rank)}${c.suit}`).join(' ')
+              ? playableCards.map((c) => `${c.rank}${c.suit}`).join(' ')
               : '(none)'}
           </span>
         </div>
@@ -279,7 +271,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           disabled={!myTurn || !selectedCard}
           onClick={handlePlayButton}
         >
-          PLAY {selectedCard ? `${formatRank(selectedCard.rank)}${selectedCard.suit}` : ''}
+          PLAY {selectedCard ? `${selectedCard.rank}${selectedCard.suit}` : ''}
         </button>
       </div>
 
@@ -319,7 +311,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
 
       {/* Instructions */}
       <div className="game-instructions">
-        <strong>Card Legend:</strong> 🌟 = Wildcard (10, changes suit) | ⏭️ = Skip (6, grants free play)
+        <strong>Card Legend:</strong> 🌟 = Wildcard (10, changes suit) | ⏭️ = Skip ({skipRank}, grants free play)
       </div>
     </div>
   );

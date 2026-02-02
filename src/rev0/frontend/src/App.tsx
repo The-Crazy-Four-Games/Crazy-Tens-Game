@@ -66,7 +66,6 @@ export default function App() {
   const [userId, setUserId] = useState<string>(() => localStorage.getItem("userId") || "");
 
   const [baseId, setBaseId] = useState<"doz" | "dec">("doz");
-  const [displayBase, setDisplayBase] = useState<"doz" | "dec">("doz");
   const [lobbyId, setLobbyId] = useState("");
 
   const [gameId, setGameId] = useState("");
@@ -163,7 +162,6 @@ export default function App() {
     );
     setGameId(out.gameId);
     setPs(out.publicState);
-    setDisplayBase(out.publicState.baseId);
     pushLog(`Started match: gameId=${out.gameId}`);
   }
 
@@ -186,7 +184,6 @@ export default function App() {
 
     s.on(WS.GAME_STATE, (state: PublicState) => {
       setPs(state);
-      setDisplayBase(state.baseId);
       pushLog(`STATE: top=${state.topCard.rank}${state.topCard.suit} forced=${state.forcedSuit ?? "-"} turn=${state.turn.slice(0, 6)}...`);
     });
 
@@ -234,9 +231,13 @@ export default function App() {
     setMyHand([]);
   }
 
-  // Toggle display base
-  function toggleDisplayBase() {
-    setDisplayBase(prev => prev === 'doz' ? 'dec' : 'doz');
+  // Play again handler - returns to lobby to start a new game
+  function handlePlayAgain() {
+    setGameJoined(false);
+    setPs(null);
+    setMyHand([]);
+    setGameId("");
+    pushLog("Returning to lobby for a new game...");
   }
 
   // Render appropriate screen
@@ -252,8 +253,7 @@ export default function App() {
         onPass={doPass}
         onPlay={doPlay}
         onBackToLobby={handleBackToLobby}
-        displayBase={displayBase}
-        onToggleBase={toggleDisplayBase}
+        onPlayAgain={handlePlayAgain}
       />
     );
   }

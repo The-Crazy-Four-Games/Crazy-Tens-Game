@@ -57,7 +57,7 @@ export const DECIMAL_SYSTEM: NumeralSystem = (() => {
     targetSumText: "10",     // base10 10
     targetScoreText: "50",   // base10 50
     wildcardTenSymbol: "10",
-    wildcardSkipSymbol: "6",
+    wildcardSkipSymbol: "5", // 5+5=10 in decimal
     facePointsDec: 10,
   };
 })();

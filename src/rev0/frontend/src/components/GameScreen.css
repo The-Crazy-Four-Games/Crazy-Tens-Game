@@ -111,6 +111,36 @@
   margin-bottom: 15px;
   font-size: 1.3rem;
   color: #ffd700;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.play-again-btn {
+  padding: 12px 30px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.play-again-btn:hover {
+  background: #45a049;
+  transform: scale(1.05);
+}
+
+/* Game Base Info */
+.game-base-info {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
 }
 
 /* Opponent Area */
