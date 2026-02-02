@@ -193,10 +193,10 @@ Time Period : November 26 (POC Demo) - February 02 (Rev0 Demo)
 
 % Define commit counts (not printed)
 % If there are any updates to your commit totals, please update the variables below with the correct number.
-\pgfmathtruncatemacro{\cRuida}{11}
+\pgfmathtruncatemacro{\cRuida}{25}
 \pgfmathtruncatemacro{\cJiaming}{2}
-\pgfmathtruncatemacro{\cAmmar}{7}
-\pgfmathtruncatemacro{\cAlvin}{4}
+\pgfmathtruncatemacro{\cAmmar}{10}
+\pgfmathtruncatemacro{\cAlvin}{7}
 \pgfmathtruncatemacro{\cTotal}{\cRuida+\cJiaming+\cAmmar+\cAlvin}
 
 % Compute percentages (one decimal, not printed)
@@ -220,7 +220,16 @@ Alvin Qian & \cAlvin & \pAlvin\% \\
 \end{tabular}
 \end{table}
 
-\textbf{Note: Different teammates use different commit styles.} Some prefer batching changes into a few large commits after completing a section, while others commit incrementally. As a result, the number of commits does not necessarily correspond directly to workload or contribution size.
+\begin{itemize}
+    \item \textbf{Note: Different teammates use different commit styles.} Some prefer batching changes into a few large commits after completing a section, while others commit incrementally. As a result, the number of commits does not necessarily correspond directly to workload or contribution size.
+    \item Keep in mind, pull requests and merge / automated commits are included in these counts as well, especially for Teammate Ruida, Ammar and Alvin.
+    \item Jiaming Li wrote 10/19 Modules in the MIS, \href{https://github.com/The-Crazy-Four-Games/Crazy\_1-0s\_Game/commit/53df31e8384967586ab3dc32394d53df841e11e5}{see commit}. Jiaming also did implementation of our peer review team (Team 05) notification module, \href{https://github.com/The-Crazy-Four-Games/Crazy_1-0s_Game/commit/2a40b21a0a82a3f6dc946d0722964c47434a3d56}{see reflection} and \href{https://github.com/The-Crazy-Four-Games/Crazy\_1-0s\_Game/issues/188}{issue}.
+    \item Ruida Chen wrote 9/19 modules in the MIS, and some sections in the MG. For Rev0 primarily worked on implementing the backend, \href{https://github.com/The-Crazy-Four-Games/Crazy\_1-0s\_Game/commit/ceebb75798225f95975056d683a2ea7141603796}{see commit}
+    \item Alvin Qian updated several sections in the \href{https://github.com/The-Crazy-Four-Games/Crazy\_1-0s\_Game/commits/MG}{MG branch}. For Rev0, Alvin implemented the majority of the front end \href{https://github.com/The-Crazy-Four-Games/Crazy\_1-0s\_Game/commits/frontend}{see branch}and did most of the subsequent integration with the backend.
+    \item Ammar Sharbat did not do much deliverable work, but worked on the Design Thinking extra and the game mechanics problem, \href{https://github.com/The-Crazy-Four-Games/Crazy\_1-0s\_Game/issues/163}{Jan 8 Team meeting (and sub-issues)}, and \href{https://github.com/The-Crazy-Four-Games/Crazy\_1-0s\_Game/issues/182}{Jan 22 Supervisor Meeting (and sub-issues)}. His role after the POC was project management for the team, including initiating discussion, meetings, delegation and issue tracking (see \href{https://github.com/The-Crazy-Four-Games/Crazy\_1-0s\_Game/issues/?q=author%3Asharbata}{authored} and \href{https://github.com/The-Crazy-Four-Games/Crazy\_1-0s\_Game/issues/issues?q=assignee%3Asharbata}{assigned} issues). Ammar also is the one who did section 2-7 of this team contribution report.
+\end{itemize}
+
+
 
 \section{Issue Tracker}
 
@@ -232,18 +241,21 @@ Time Period : November 26 (POC Demo) - February 02 (Rev0 Demo)
 \toprule
 \textbf{Student} & \textbf{Authored (O+C)} & \textbf{Assigned (C only)}\\
 \midrule
-Ruida Chen & 13 & 12 \\
-Jiaming Li & 9 & 14\\
-Alvin Qian & 16 & 17\\
-Ammar Sharbat & 29 & 20\\
+Ruida Chen & 13 & 33\\
+Jiaming Li & 9 & 19\\
+Alvin Qian & 19 & 28\\
+Ammar Sharbat & 32 & 24\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Some issues were created long ago (from before POC Demo) but were only closed recently, either due to delay in resolution or due to being left open unintentionally.\\
-Also, some issues for events/work that was finished long ago (before POC) were just made now for tracking / traceability purposes.\\
-Both of these circumstances relate to legacy issues (before POC Demo) and so they do not reflect work for the current reporting period (i.e. between POC and Rev0).\\
-\textbf{Rest assured, legacy issues (explained above) have been excluded from issue counts and totals in the above table.}
+\begin{itemize}
+    \item \textbf{Legacy issues (ones before the POC Demo) are NOT included in the issue counts and totals in the above table. Though, the tallying for issues between POC to Rev0 is a bit nuanced (see below reasons).}
+    \item Many issues in our repo were created long ago (before POC Demo) but were only \href{https://github.com/The-Crazy-Four-Games/Crazy\_1-0s\_Game/issues?q=is%3Aissue%20state%3Aclosed%20sort%3Acreated-desc%20POC}{closed recently}, either due to delay in resolution or due to being left open unintentionally.
+    \item Similarly, many project tasks (e.g. deliverable work, lectures) were finished long ago (before POC), but were only \href{https://github.com/The-Crazy-Four-Games/Crazy\_1-0s\_Game/issues?q=is%3Aissue%20state%3Aclosed%20sort%3Acreated-desc%20lecture}{authored (and closed) recently} for accurate tracking / traceability purposes.
+    \item In both of these cases, the mentioned issues were ignored from the tally above.
+    \item The tally above is only concerned with authored (opened + closed) and assigned (closed) issues for project work or coursework (like lectures) that happened \textbf{between the POC and Rev0}. Rest assured, our issue tracking and counting is very diligent and accurate.
+\end{itemize}
 
 
 \section{CICD}
