@@ -6,6 +6,7 @@ export type GameAction =
   | { type: "PLAY"; playerId: PlayerID; card: Card; chosenSuit?: Suit; at?: number }
   | { type: "DRAW"; playerId: PlayerID; at?: number }
   | { type: "PASS"; playerId: PlayerID; at?: number };
+  | { type: "ANSWER_CHALLENGE"; playerId: PlayerID; answer: string; at?: number };
 
 export function withTimestamp<T extends GameAction>(a: T): T {
   return a.at ? a : ({ ...a, at: Date.now() } as T);
@@ -14,4 +15,7 @@ export function withTimestamp<T extends GameAction>(a: T): T {
 export function assertTurn(currentTurn: PlayerID, a: GameAction): void {
   if (a.playerId !== currentTurn) throw new Error("NotYourTurn");
   if (a.type === "PLAY" && !a.card) throw new Error("MissingCard");
+  if (a.type === "ANSWER_CHALLENGE" && (a.answer === undefined || a.answer === null)) {
+      throw new Error("MissingAnswer");
+  }
 }
