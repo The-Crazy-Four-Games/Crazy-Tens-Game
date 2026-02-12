@@ -234,9 +234,9 @@ export function applyPlay(
           type: '/',
           op1: product,
           op2: op1,
-          answer,
           reward: 10,
           shouldPassTurn: true
+        }
         }
       };
     } else {
@@ -259,6 +259,7 @@ export function applyPlay(
       };
     }
   }
+
   // skip wildcard -> same player continues
   if (card.rank === sys.wildcardSkipSymbol) return after;
 
