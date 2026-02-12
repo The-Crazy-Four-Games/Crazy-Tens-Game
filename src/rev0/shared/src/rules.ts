@@ -111,6 +111,7 @@ function reshuffleIfNeeded(state: RoundState): RoundState {
 export function isPlayable(sys: NumeralSystem, state: RoundState, playerId: PlayerID, card: Card): boolean {
   if (state.turn !== playerId) return false;
 
+  if (state.activeChallenge) return false;
   // ✅ freePlay：无视 topCard/forcedSuit，可出任意手牌
   if (state.freePlayFor === playerId) return true;
 
@@ -158,7 +159,7 @@ export function applyDraw(sys: NumeralSystem, state: RoundState, playerId: Playe
   };
 
   // ✅ 抽满3次仍无可出牌：自动切到对面 + 对面 freePlay 1 次
-  if (s.drawCountThisTurn >= 3 && getPlayableCards(sys, s, playerId).length === 0) {
+  if (s.drawCountThisTurn >= 3 && getPlayableCards(sys, s, playerId).length === 0 && !s.activeChallenge) {
     const nxt = nextPlayer(s);
     s = {
       ...s,
@@ -211,6 +212,53 @@ export function applyPlay(
     drawCountThisTurn: 0,
   };
 
+  let challengeType: '+' | '-' | '*' | '/' | undefined;
+
+  if (card.rank === sys.wildcardTenSymbol) challengeType = '+';
+  else if (card.rank === "J") challengeType = '-';
+  else if (card.rank === "Q") challengeType = '*';
+  else if (card.rank === "K") challengeType = '/';
+
+  if (challengeType) {
+    const op1 = Math.floor(Math.random() * 12) + 1;
+    let op2 = Math.floor(Math.random() * 12) + 1;
+
+    if (challengeType === '/') {
+      const product = op1 * op2;
+      const answer = op2;
+
+      return {
+        ...after,
+        activeChallenge: {
+          playerId,
+          type: '/',
+          op1: product,
+          op2: op1,
+          answer,
+          reward: 10,
+          shouldPassTurn: true
+        }
+      };
+    } else {
+      let answer = 0;
+      if (challengeType === '+') answer = op1 + op2;
+      if (challengeType === '-') answer = op1 - op2;
+      if (challengeType === '*') answer = op1 * op2;
+
+      return {
+        ...after,
+        activeChallenge: {
+          playerId,
+          type: challengeType,
+          op1,
+          op2,
+          answer,
+          reward: 10,
+          shouldPassTurn: true
+        }
+      };
+    }
+  }
   // skip wildcard -> same player continues
   if (card.rank === sys.wildcardSkipSymbol) return after;
 
@@ -233,8 +281,10 @@ export function passTurn(state: RoundState): RoundState {
 }
 
 export function isRoundOver(state: RoundState): boolean {
-  const [p1, p2] = state.players;
-  return state.hands[p1].length === 0 || state.hands[p2].length === 0;
+    if (state.activeChallenge) return false;
+
+    const [p1, p2] = state.players;
+    return state.hands[p1].length === 0 || state.hands[p2].length === 0;
 }
 
 export function roundWinner(state: RoundState): PlayerID | null {
