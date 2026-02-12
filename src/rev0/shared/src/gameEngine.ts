@@ -15,6 +15,17 @@ export type GameState = Readonly<{
   status: GameStatus;
   actionLog: readonly GameAction[];
   lastSnapshot?: GameState;
+  activeChallenge?: MathChallenge;
+}>;
+
+export type MathChallenge = Readonly<{
+  playerId: PlayerID;
+  type: '+' | '-' | '*' | '/';
+  op1: number;
+  op2: number;
+  answer: number;
+  reward: number;
+  shouldPassTurn: boolean;
 }>;
 
 export type CreateGameOptions = Readonly<{
@@ -63,6 +74,31 @@ export function applyAction(game: GameState, action: GameAction): GameState {
     case "PASS":
       round = passTurn(round);
       break;
+    case "ANSWER_CHALLENGE":
+          if (!round.activeChallenge) throw new Error("NoActiveChallenge");
+          if (round.activeChallenge.playerId !== a.playerId) throw new Error("NotYourChallenge");
+
+          const isCorrect = round.activeChallenge.answer === a.answer;
+          // If correct, add points immediately to scoresDec
+          if (isCorrect) {
+            const reward = round.activeChallenge.reward;
+            game = {
+                ...game,
+                scoresDec: {
+                    ...game.scoresDec,
+                    [a.playerId]: (game.scoresDec[a.playerId] ?? 0) + reward
+                }
+            };
+          }
+
+          // Clear challenge
+          const shouldPass = round.activeChallenge.shouldPassTurn;
+          round = { ...round, activeChallenge: undefined };
+
+          if (shouldPass) {
+              round = passTurn(round);
+          }
+          break;
   }
 
   let next: GameState = {
@@ -106,6 +142,10 @@ export function getPublicState(game: GameState) {
   }
   const targetDec = parseInSystem(game.sys.targetScoreText, game.sys);
 
+  const safeChallenge = game.round.activeChallenge
+    ? { ...game.round.activeChallenge, answer: undefined }
+    : undefined;
+
   return {
     gameId: game.gameId,
     baseId: game.sys.id,
@@ -113,6 +153,7 @@ export function getPublicState(game: GameState) {
     turn: game.round.turn,
     topCard: game.round.topCard,
     forcedSuit: game.round.forcedSuit,
+    activeChallenge: safeChallenge,
     handsCount: Object.fromEntries(Object.entries(game.round.hands).map(([pid, h]) => [pid, h.length])),
     scoresDec: game.scoresDec,
     scoresText,
