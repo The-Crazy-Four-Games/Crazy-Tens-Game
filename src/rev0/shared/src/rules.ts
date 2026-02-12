@@ -98,9 +98,17 @@ export function initRound(
 function effectiveSuit(state: RoundState): Suit {
   return state.forcedSuit ?? state.topCard.suit;
 }
-function nextPlayer(state: RoundState): PlayerID {
+export function nextPlayer(state: RoundState): PlayerID {
   const [p1, p2] = state.players;
   return state.turn === p1 ? p2 : p1;
+}
+
+export function advanceTurn(state: RoundState): RoundState {
+  return {
+    ...state,
+    turn: nextPlayer(state),
+    drawCountThisTurn: 0,
+  };
 }
 function reshuffleIfNeeded(state: RoundState): RoundState {
   if (state.deck.length > 0) return state;
